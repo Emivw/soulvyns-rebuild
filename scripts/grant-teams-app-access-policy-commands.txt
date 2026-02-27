@@ -1,0 +1,12 @@
+# Use WINDOWS POWERSHELL 5.1 (Win+X -> Windows PowerShell), not PowerShell 7.
+# If you get "You must call the Connect-MicrosoftTeams cmdlet before..." see docs/GRAPH_TEAMS_SETUP.md Step B troubleshooting.
+#
+# OPTION A - One line (use this if separate steps fail; paste whole line, Enter once, sign in when browser opens):
+Import-Module MicrosoftTeams -Force; Connect-MicrosoftTeams; New-CsApplicationAccessPolicy -Identity "Soulvyns-Meetings" -AppIds "7ba6dbba-d01e-44c4-80c9-a29b1781e923" -Description "Soulvyns create Teams meetings"; Grant-CsApplicationAccessPolicy -PolicyName "Soulvyns-Meetings" -Identity "ce5c3573-2370-4933-b9de-362eefac861c"
+
+# OPTION B - Step by step (same session; do NOT run the .ps1 with -File):
+# Step 1: Connect and sign in (work/school account, e.g. Admin@soulvyns.co.za):
+# Connect-MicrosoftTeams
+# Step 2: After you see the Account/Environment table, run:
+# New-CsApplicationAccessPolicy -Identity "Soulvyns-Meetings" -AppIds "7ba6dbba-d01e-44c4-80c9-a29b1781e923" -Description "Soulvyns create Teams meetings"
+# Grant-CsApplicationAccessPolicy -PolicyName "Soulvyns-Meetings" -Identity "ce5c3573-2370-4933-b9de-362eefac861c"

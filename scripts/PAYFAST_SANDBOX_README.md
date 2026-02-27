@@ -1,0 +1,157 @@
+# PayFast Sandbox Integration - Scripts
+
+## 📋 Overview
+
+**Signature generation is server-side only.** The only canonical implementation is `generatePayFastSignature()` in `lib/payfast.ts`. The standalone scripts that calculated signatures client-side (`payfast-sandbox-complete.js`, `payfast-sandbox-with-custom-data.js`) have been removed.
+
+## 📁 Files
+
+- **`payfast-sandbox-form-snippet.js`** - Form submission helper; expects `signature` in the booking data (obtain from server via `createPayFastPaymentData` or `POST /api/bookings/payfast-form`).
+
+## 🚀 Quick Start
+
+### Option 1: Install CryptoJS via npm
+
+```bash
+npm install crypto-js
+npm install @types/crypto-js  # For TypeScript
+```
+
+Then import in your code:
+```javascript
+import CryptoJS from 'crypto-js';
+```
+
+### Option 2: Use CDN (for HTML/browser)
+
+Add to your HTML `<head>`:
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+```
+
+## 💻 Usage
+
+Signature must come from the server. Options:
+
+1. **Next.js**: Call `POST /api/bookings/payfast-form` with JSON body; response is HTML with an auto-submitting form.
+2. **Server code**: Use `createPayFastPaymentData()` or `createPayFastPaymentUrl()` from `lib/payfast.ts` (they call `generatePayFastSignature()`).
+
+The **`payfast-sandbox-form-snippet.js`** helper expects a `signature` field in the booking data; obtain that from the server (e.g. from `createPayFastPaymentData()` or from your API that uses `lib/payfast.ts`).
+
+## 🔐 Signature (server-only)
+
+The only canonical implementation is `generatePayFastSignature()` in `lib/payfast.ts`:
+
+1. Filter empty values and the `signature` key
+2. Sort by key (localeCompare)
+3. Encode each value with `encodeURIComponent`, replace `%20` with `+`
+4. Join with `&`, then append `&passphrase=<encoded passphrase>`
+5. MD5 hex (lowercase). Passphrase from `process.env.PAYFAST_PASSPHRASE` (must match sandbox dashboard exactly)
+
+## 📝 Form Submission
+
+The snippets automatically:
+
+1. ✅ Create hidden HTML form element
+2. ✅ Set method to `POST` (required by PayFast)
+3. ✅ Set action to `https://sandbox.payfast.co.za/eng/process`
+4. ✅ Add all payment fields as hidden inputs
+5. ✅ Include calculated signature
+6. ✅ Append form to DOM
+7. ✅ Automatically submit form
+
+## ⚙️ Configuration
+
+### PayFast Sandbox Credentials
+
+```javascript
+const MERCHANT_ID = '10045991';
+const MERCHANT_KEY = '2q99zezq11goo';
+const PASSPHRASE = 'SKYrim_3602000';
+const PAYFAST_SANDBOX_URL = 'https://sandbox.payfast.co.za/eng/process';
+```
+
+### Amount Formatting
+
+**Important**: Amounts must be formatted with exactly 2 decimal places:
+- ✅ Correct: `"500.00"`
+- ✅ Correct: `"100.50"`
+- ❌ Wrong: `"500"`
+- ❌ Wrong: `"500.0"`
+
+The snippets automatically format amounts using:
+```javascript
+const amount = parseFloat(bookingData.amount).toFixed(2);
+```
+
+## 🔍 Debugging
+
+The snippets include comprehensive console logging:
+
+```javascript
+console.log('⚙️ [PAYFAST] Configuring PayFast sandbox...');
+console.log('📋 [PAYFAST] Setting up booking details...');
+console.log('🔐 [PAYFAST] Calculating MD5 signature...');
+console.log('✅ [PAYFAST] Form submitted successfully!');
+```
+
+Check browser console for detailed logs.
+
+## ✅ Validation
+
+The snippets validate:
+
+- ✅ CryptoJS library is available
+- ✅ Required fields are present
+- ✅ Amount is properly formatted
+- ✅ Parameters are sorted alphabetically
+- ✅ Values are URL-encoded correctly
+- ✅ Signature is calculated correctly
+
+## 🐛 Troubleshooting
+
+### Error: "CryptoJS library is required"
+
+**Solution**: Install CryptoJS or add CDN script tag.
+
+### Error: "Missing required fields"
+
+**Solution**: Ensure all required fields are provided:
+- `firstName`, `lastName`, `email`, `paymentId`, `amount`, `itemName`, `returnUrl`, `cancelUrl`, `notifyUrl`
+
+### Error: 400 Bad Request from PayFast
+
+**Possible Causes:**
+1. Using GET instead of POST (fixed: using POST)
+2. Incorrect signature (fixed: proper signature calculation)
+3. Missing required fields (fixed: validation included)
+4. Incorrect URL encoding (fixed: proper encoding)
+
+**Solution**: The snippets handle all these cases correctly.
+
+## 📚 Integration Examples
+
+### Next.js (recommended)
+
+Use the app test page as reference: `/test-payfast` POSTs to `/api/bookings/payfast-form` and open the returned HTML in a new tab. No client-side signature; all signing is in `lib/payfast.ts`.
+
+## 📖 API Reference
+
+- **Server (canonical)**: `generatePayFastSignature(data)` in `lib/payfast.ts`. Passphrase from `process.env.PAYFAST_PASSPHRASE`. Do not generate signatures on the client.
+- **`payfast-sandbox-form-snippet.js`**: Function expects `bookingData.signature` to be provided (get it from the server).
+
+## 🎯 Testing
+
+1. Run the Next.js app and open `/test-payfast`.
+2. Click the button; a new tab opens with a form that auto-submits to PayFast (signature is generated by the server).
+3. Ensure `PAYFAST_PASSPHRASE` in `.env.local` matches the sandbox dashboard exactly (no trailing space, no quotes).
+
+## 📞 Support
+
+For PayFast documentation:
+- Sandbox: https://sandbox.payfast.co.za
+- Documentation: https://www.payfast.co.za/documentation/
+
+---
+
+**Status**: ✅ Ready to use

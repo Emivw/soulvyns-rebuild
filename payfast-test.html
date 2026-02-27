@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PayFast Sandbox Test</title>
+</head>
+<body>
+  <h1>PayFast Sandbox Test</h1>
+  <p>
+    Signature generation is server-side only. Use the Next.js app to test:
+  </p>
+  <ul>
+    <li>Run the app and open <strong>/test-payfast</strong> or <strong>/test-payfast-simple</strong></li>
+    <li>Those pages call <strong>POST /api/bookings/payfast-form</strong>, which builds the form and signs it with the canonical function in <code>lib/payfast.ts</code></li>
+  </ul>
+  <p>
+    Do not use client-side signature generation. The only canonical implementation is <code>generatePayFastSignature()</code> in <code>lib/payfast.ts</code> (server-only).
+  </p>
+</body>
+</html>
