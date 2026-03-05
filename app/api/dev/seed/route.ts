@@ -2,18 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 /**
- * Development seed route to populate database with test data
- * WARNING: Only use in development environment
+ * Development seed route to populate database with test data.
+ * - In development: always allowed.
+ * - In production: allowed only if request body includes secret matching SEED_SECRET env var.
  */
 export async function POST(request: NextRequest) {
   try {
-    // Only allow in development mode
-    if (process.env.NODE_ENV !== 'development') {
-      console.warn('⚠️ Seed route accessed in non-development mode');
-      return NextResponse.json(
-        { error: 'Seed route is only available in development mode' },
-        { status: 403 }
-      );
+    const isDev = process.env.NODE_ENV === 'development';
+    const seedSecret = process.env.SEED_SECRET?.trim();
+
+    if (!isDev) {
+      if (!seedSecret) {
+        console.warn('⚠️ Seed route accessed in production but SEED_SECRET is not set');
+        return NextResponse.json(
+          { error: 'Seed route is only available in development mode or when SEED_SECRET is configured' },
+          { status: 403 }
+        );
+      }
+      const body = await request.json().catch(() => ({}));
+      const providedSecret = (body?.secret ?? body?.SEED_SECRET ?? '').toString().trim();
+      if (providedSecret !== seedSecret) {
+        return NextResponse.json(
+          { error: 'Invalid or missing seed secret' },
+          { status: 403 }
+        );
+      }
     }
 
     // Verify Supabase credentials are available

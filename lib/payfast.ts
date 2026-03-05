@@ -176,7 +176,7 @@ export function getPayFastCallbackUrls(): {
  *
  * @returns PayFast process URL
  */
-function getPayFastProcessUrl(): string {
+export function getPayFastProcessUrl(): string {
   const env = process.env.PAYFAST_ENV || 'sandbox';
   const isProduction = env === 'production';
   

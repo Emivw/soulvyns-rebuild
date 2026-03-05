@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generatePayFastSignature, getPayFastCallbackUrls } from '@/lib/payfast';
+import { generatePayFastSignature, getPayFastCallbackUrls, getPayFastProcessUrl } from '@/lib/payfast';
 
 function escapeHtmlAttr(s: string): string {
   return s
@@ -69,8 +69,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Log exactly what we send to PayFast (for debugging 400/signature mismatch)
+    const processUrl = getPayFastProcessUrl();
     console.log('[payfast-form] Sending to PayFast:', {
-      signature,
+      processUrl,
       return_url: params.return_url,
       cancel_url: params.cancel_url,
       notify_url: params.notify_url,
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     const htmlForm = `<html>
   <body onload="document.forms[0].submit()">
-    <form action="https://sandbox.payfast.co.za/eng/process" method="POST">
+    <form action="${escapeHtmlAttr(processUrl)}" method="POST">
     ${inputs}
     </form>
   </body>
