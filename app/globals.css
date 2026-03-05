@@ -4,7 +4,8 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Soft purple-tinted background instead of pure white */
+    --background: 270 40% 97%;
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
@@ -50,7 +51,8 @@
     border-color: hsl(var(--border));
   }
   body {
-    background-color: hsl(var(--background));
+    /* Let page components control the background (hero gradient, etc.) */
+    background-color: transparent;
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import { ArrowRight, Loader2 } from '@/components/icons';
 
 interface Counselor {
   id: string;
   display_name: string;
-  email: string;
+  bio?: string | null;
+  accolades?: string | null;
+  specializations?: string[] | null;
+  avatar_url?: string | null;
 }
 
 export default function CounselorsPage() {
@@ -21,7 +25,7 @@ export default function CounselorsPage() {
       try {
         const { data, error } = await supabase
           .from('counselors')
-          .select('id, display_name, email');
+          .select('id, display_name, bio, accolades, specializations, avatar_url');
 
         if (error) throw error;
         setCounselors(data ?? []);
@@ -36,11 +40,23 @@ export default function CounselorsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      <div className="mb-8 text-center">
-        <h1 className="font-headline text-4xl font-bold text-foreground">Meet Our Counselors</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          Browse our network of professionals and find the right fit for you.
-        </p>
+      <div className="relative rounded-xl overflow-hidden mb-10 h-48 sm:h-56 md:h-64 bg-muted">
+        <Image
+          src="/assets/photos/pexels-shvets-production-7176305.jpg"
+          alt="People in a supportive group discussion"
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 1152px"
+          priority
+        />
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+          <div className="text-center text-white px-4">
+            <h1 className="font-headline text-3xl sm:text-4xl font-bold">Meet Our Counselors</h1>
+            <p className="mt-2 text-sm sm:text-base text-white/90">
+              Browse our network of professionals and find the right fit for you.
+            </p>
+          </div>
+        </div>
       </div>
 
       {loading && (
@@ -58,20 +74,54 @@ export default function CounselorsPage() {
       {!loading && !error && counselors.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {counselors.map((c) => (
-            <div
+            <article
               key={c.id}
-              className="flex flex-col rounded-lg border border-border bg-card p-6 shadow-sm transition hover:shadow-md"
+              className="flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm transition hover:shadow-md"
             >
-              <h2 className="font-headline text-xl font-semibold text-foreground">{c.display_name}</h2>
-              <p className="text-sm text-muted-foreground mt-1">{c.email}</p>
-              <Link
-                href={`/book/${c.id}`}
-                className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
-              >
-                Book session
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </div>
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex items-start gap-4">
+                  {c.avatar_url ? (
+                    <img
+                      src={c.avatar_url}
+                      alt=""
+                      className="h-16 w-16 rounded-full object-cover border border-border flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-muted border border-border flex items-center justify-center text-lg font-semibold text-muted-foreground flex-shrink-0">
+                      {c.display_name?.charAt(0) ?? '?'}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-headline text-xl font-semibold text-foreground">{c.display_name}</h2>
+                    {c.specializations && c.specializations.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {c.specializations.map((s) => (
+                          <span
+                            key={s}
+                            className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {c.bio && (
+                  <p className="mt-3 text-sm text-muted-foreground line-clamp-3">{c.bio}</p>
+                )}
+                {c.accolades && (
+                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{c.accolades}</p>
+                )}
+                <Link
+                  href={`/counselor/${c.id}`}
+                  className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
+                >
+                  View Availability
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </div>
+            </article>
           ))}
         </div>
       )}

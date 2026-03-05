@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { HeartHandshake, Users, Shield, Clock } from '@/components/icons';
 
 export default function About() {
@@ -16,6 +17,33 @@ export default function About() {
           book sessions that fit your schedule. All sessions are conducted via Microsoft Teams with secure payment through PayFast.
         </p>
       </div>
+
+      {/* Our approach – counseling in action */}
+      <div className="mt-12 rounded-xl overflow-hidden border border-border bg-card">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+          <div className="relative aspect-[4/3] md:aspect-auto md:min-h-[240px]">
+            <Image
+              src="/assets/photos/pexels-mart-production-7699526.jpg"
+              alt="Counselor listening and taking notes in a supportive session"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          </div>
+          <div className="relative aspect-[4/3] md:aspect-auto md:min-h-[240px]">
+            <Image
+              src="/assets/photos/pexels-gustavo-fring-7447255.jpg"
+              alt="Understanding your feelings in a safe, supportive space"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          </div>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground text-center mt-4">
+        Professional, confidential support tailored to you.
+      </p>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-12">
         <div className="flex gap-4 p-6 rounded-lg border border-border bg-card">
@@ -47,6 +75,31 @@ export default function About() {
           </div>
         </div>
       </div>
+
+      {/* Relationship and group support */}
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="relative rounded-xl overflow-hidden border border-border aspect-[16/10] bg-muted">
+          <Image
+            src="/assets/photos/pexels-cottonbro-4098232.jpg"
+            alt="A calm, professional session space"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        </div>
+        <div className="relative rounded-xl overflow-hidden border border-border aspect-[16/10] bg-muted">
+          <Image
+            src="/assets/photos/pexels-shkrabaanthony-7579115.jpg"
+            alt="Relationship support and mediation"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground text-center mt-4">
+        From one-on-one sessions to relationship and group support.
+      </p>
 
       <div className="mt-12 text-center">
         <Link

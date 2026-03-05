@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     }
     const { data, error } = await supabaseAdmin
       .from('counselors')
-      .select('id, display_name, email, bio, accolades, specializations')
-      .or(`email.eq.${email.trim()},ms_graph_user_email.eq.${email.trim()}`)
+      .select('id, display_name, bio, accolades, specializations, avatar_url')
+      .eq('ms_graph_user_email', email.trim())
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: 'Counselor not found' }, { status: 404 });
@@ -43,12 +43,13 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.bio === 'string') updates.bio = body.bio;
     if (typeof body.accolades === 'string') updates.accolades = body.accolades;
     if (Array.isArray(body.specializations)) updates.specializations = body.specializations;
+    if (typeof body.avatar_url === 'string') updates.avatar_url = body.avatar_url || null;
 
     const { data, error } = await supabaseAdmin
       .from('counselors')
       .update(updates)
-      .or(`email.eq.${email.trim()},ms_graph_user_email.eq.${email.trim()}`)
-      .select('id, display_name, bio, accolades, specializations')
+      .eq('ms_graph_user_email', email.trim())
+      .select('id, display_name, bio, accolades, specializations, avatar_url')
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ counselor: data });

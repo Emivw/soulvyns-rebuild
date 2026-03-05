@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${lato.variable} ${poppins.variable}`}>
-      <body className="font-body min-h-screen flex flex-col bg-background text-foreground">
+      <body className="font-body min-h-screen flex flex-col text-foreground">
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

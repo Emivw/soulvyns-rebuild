@@ -28,6 +28,13 @@ export default function CounselorDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
+  type DaySlot = { id: string; start: string; end: string };
+  type AvailabilityState = Record<number, DaySlot[]>;
+  const [availability, setAvailability] = useState<AvailabilityState>({});
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilitySuccess, setAvailabilitySuccess] = useState('');
+
   useEffect(() => {
     if (accounts.length > 0) {
       setEmail(accounts[0].username);
@@ -45,9 +52,12 @@ export default function CounselorDashboard() {
 
   const [error, setError] = useState('');
   const [counselorNotFound, setCounselorNotFound] = useState(false);
-  const [profile, setProfile] = useState<{ bio?: string; accolades?: string; specializations?: string[] } | null>(null);
+  const [profile, setProfile] = useState<{ bio?: string; accolades?: string; specializations?: string[]; avatar_url?: string | null } | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileEdit, setProfileEdit] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [profileSaveError, setProfileSaveError] = useState('');
 
   useEffect(() => {
     if (!loading && accounts.length === 0) {
@@ -55,6 +65,14 @@ export default function CounselorDashboard() {
       router.refresh();
     }
   }, [loading, accounts.length, router]);
+
+  function apiErrorMsg(res: Response, data: { error?: string }): string {
+    const msg = data?.error ?? 'Request failed.';
+    if (res.status === 403 || /permission|not authorized|access denied|RLS/i.test(msg)) {
+      return 'You do not have permission to perform this action.';
+    }
+    return msg;
+  }
 
   const loadBookings = async () => {
     try {
@@ -69,19 +87,39 @@ export default function CounselorDashboard() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error((data && data.error) || 'Failed to load bookings');
+        throw new Error(apiErrorMsg(response, data));
       }
 
-      setBookings(data.bookings || []);
+      setBookings(Array.isArray(data.bookings) ? data.bookings : []);
       setCounselorNotFound(!!data.counselorNotFound);
       if (email) {
         const pr = await fetch(`/api/counselors/profile?email=${encodeURIComponent(email)}`);
         const prData = await pr.json().catch(() => ({}));
-        if (prData.counselor) setProfile(prData.counselor);
+        if (pr.ok && prData.counselor) setProfile(prData.counselor);
+        if (!pr.ok) setError(apiErrorMsg(pr, prData));
+
+        const avRes = await fetch(`/api/counselors/availability?email=${encodeURIComponent(email)}`);
+        const avData = await avRes.json().catch(() => ({}));
+        if (avRes.ok && Array.isArray(avData.slots)) {
+          const byDay: AvailabilityState = {};
+          avData.slots.forEach((slot: { day_of_week: number; start_time: string; end_time: string }) => {
+            const day = Number(slot?.day_of_week);
+            if (day < 0 || day > 6) return;
+            byDay[day] ??= [];
+            byDay[day].push({
+              id: `${day}-${slot.start_time}-${slot.end_time}`,
+              start: String(slot.start_time ?? ''),
+              end: String(slot.end_time ?? ''),
+            });
+          });
+          setAvailability(byDay);
+        } else if (!avRes.ok) {
+          setError(apiErrorMsg(avRes, avData));
+        }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to load bookings. Please try again.';
-      console.error('Error loading bookings:', err);
+      const message = err instanceof Error ? err.message : 'Failed to load dashboard. Please try again.';
+      console.error('Error loading counselor dashboard:', err);
       setError(message);
     } finally {
       setLoading(false);
@@ -89,11 +127,12 @@ export default function CounselorDashboard() {
   };
 
   const now = new Date().toISOString();
-  const upcomingBookings = bookings.filter(
-    (b) => b.availability_slots?.start_time && b.availability_slots.start_time >= now
+  const bookingsList = Array.isArray(bookings) ? bookings : [];
+  const upcomingBookings = bookingsList.filter(
+    (b) => b?.availability_slots?.start_time && b.availability_slots.start_time >= now
   );
-  const pastBookings = bookings.filter(
-    (b) => b.availability_slots?.start_time && b.availability_slots.start_time < now
+  const pastBookings = bookingsList.filter(
+    (b) => b?.availability_slots?.start_time && b.availability_slots.start_time < now
   );
 
   if (!loading && accounts.length === 0) {
@@ -134,6 +173,11 @@ export default function CounselorDashboard() {
               <p className="text-sm text-muted-foreground mb-4">Bio, accolades, and specializations help clients find you.</p>
               {!profileEdit ? (
                 <div>
+                  {profile?.avatar_url && (
+                    <div className="mb-4">
+                      <img src={profile.avatar_url} alt="Profile" className="h-24 w-24 rounded-full object-cover border border-border" />
+                    </div>
+                  )}
                   {profile?.bio && <p className="text-muted-foreground whitespace-pre-wrap mb-2">{profile.bio}</p>}
                   {profile?.accolades && <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-2">{profile.accolades}</p>}
                   {profile?.specializations && profile.specializations.length > 0 && (
@@ -146,7 +190,7 @@ export default function CounselorDashboard() {
                   {!profile?.bio && !profile?.accolades && (!profile?.specializations || profile.specializations.length === 0) && (
                     <p className="text-muted-foreground text-sm">No profile details yet.</p>
                   )}
-                  <button type="button" onClick={() => setProfileEdit(true)} className="mt-2 text-sm font-medium text-primary hover:underline">Edit profile</button>
+                  <button type="button" onClick={() => { setProfileEdit(true); setAvatarFile(null); setAvatarPreview(null); setProfileSaveError(''); }} className="mt-2 text-sm font-medium text-primary hover:underline">Edit profile</button>
                 </div>
               ) : (
                 <form
@@ -158,14 +202,66 @@ export default function CounselorDashboard() {
                     const specRaw = (form.querySelector('[name="specializations"]') as HTMLInputElement)?.value ?? '';
                     const specializations = specRaw ? specRaw.split(',').map((s) => s.trim()).filter(Boolean) : [];
                     setProfileSaving(true);
+                    setProfileSaveError('');
                     try {
-                      const res = await fetch('/api/counselors/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, bio, accolades, specializations }) });
+                      let avatarUrl: string | null = profile?.avatar_url ?? null;
+                      if (avatarFile && email) {
+                        const fd = new FormData();
+                        fd.set('file', avatarFile);
+                        fd.set('email', email);
+                        const uploadRes = await fetch('/api/counselors/profile/avatar', { method: 'POST', body: fd });
+                        const uploadData = await uploadRes.json().catch(() => ({}));
+                        if (!uploadRes.ok) {
+                          setProfileSaveError(uploadData.error || 'Failed to upload profile picture.');
+                          return;
+                        }
+                        if (uploadData.avatar_url) avatarUrl = uploadData.avatar_url;
+                      }
+                      const res = await fetch('/api/counselors/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, bio, accolades, specializations, avatar_url: avatarUrl }) });
                       const data = await res.json().catch(() => ({}));
                       if (res.ok && data.counselor) { setProfile(data.counselor); setProfileEdit(false); }
+                      else setProfileSaveError(res.status === 403 ? 'You do not have permission to update this profile.' : (data.error || 'Failed to save profile.'));
                     } finally { setProfileSaving(false); }
                   }}
                   className="space-y-4"
                 >
+                  {profileSaveError && (
+                    <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+                      <p className="text-destructive text-sm">{profileSaveError}</p>
+                    </div>
+                  )}
+                  <div className="flex flex-col md:flex-row items-start gap-4 rounded-lg border border-dashed border-border bg-muted/20 p-4">
+                    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 border border-border">
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Preview" className="h-full w-full object-cover" />
+                      ) : profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Current" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground text-center px-2">Photo</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor="counselor-avatar" className="block text-sm font-medium text-foreground mb-1">
+                        Profile picture (optional)
+                      </label>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        JPG, PNG, WebP or GIF. Max 5MB.
+                      </p>
+                      <input
+                        id="counselor-avatar"
+                        name="avatar"
+                        type="file"
+                        accept="image/*"
+                        className="text-sm"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) { setAvatarFile(null); setAvatarPreview(null); return; }
+                          setAvatarFile(file);
+                          setAvatarPreview(URL.createObjectURL(file));
+                        }}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Bio</label>
                     <textarea name="bio" rows={3} defaultValue={profile?.bio} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground" placeholder="Short bio" />
@@ -183,6 +279,224 @@ export default function CounselorDashboard() {
                 </form>
               )}
               <p className="text-xs text-muted-foreground mt-4">Availability slots can be added by an administrator.</p>
+            </section>
+          )}
+
+          {!counselorNotFound && (
+            <section className="mb-8 rounded-lg border border-border bg-muted/30 p-6">
+              <h2 className="font-headline text-xl font-semibold text-foreground mb-2">My Availability</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Set the times you are available for sessions on each day. Clients can only be booked into these windows.
+              </p>
+              {availabilityError && (
+                <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {availabilityError}
+                </div>
+              )}
+              {availabilitySuccess && (
+                <div className="mb-4 rounded-lg border border-emerald-300/60 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {availabilitySuccess}
+                </div>
+              )}
+              <div className="space-y-4">
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
+                  (label, index) => {
+                    const day = index; // 0 = Monday
+                    const slots = availability[day] ?? [];
+                    return (
+                      <div
+                        key={label}
+                        className="rounded-lg border border-border bg-background/40 p-4 space-y-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-foreground">{label}</h3>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvailabilityError('');
+                              setAvailabilitySuccess('');
+                              setAvailability((prev) => ({
+                                ...prev,
+                                [day]: [
+                                  ...(prev[day] ?? []),
+                                  {
+                                    id: `${day}-${Date.now()}-${(prev[day] ?? []).length}`,
+                                    start: '09:00',
+                                    end: '17:00',
+                                  },
+                                ],
+                              }));
+                            }}
+                            className="rounded border border-border px-2 py-1 text-xs font-medium text-primary hover:bg-muted"
+                          >
+                            + Add Time Slot
+                          </button>
+                        </div>
+                        {slots.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            No availability set for this day.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {slots.map((slot) => (
+                              <div
+                                key={slot.id}
+                                className="flex flex-col gap-2 rounded-md border border-dashed border-border bg-muted/40 p-3 md:flex-row md:items-center"
+                              >
+                                <div className="flex flex-1 items-center gap-2">
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    Start
+                                  </label>
+                                  <input
+                                    type="time"
+                                    value={slot.start}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setAvailabilityError('');
+                                      setAvailabilitySuccess('');
+                                      setAvailability((prev) => ({
+                                        ...prev,
+                                        [day]: (prev[day] ?? []).map((s) =>
+                                          s.id === slot.id ? { ...s, start: value } : s,
+                                        ),
+                                      }));
+                                    }}
+                                    className="w-28 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                  />
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    End
+                                  </label>
+                                  <input
+                                    type="time"
+                                    value={slot.end}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setAvailabilityError('');
+                                      setAvailabilitySuccess('');
+                                      setAvailability((prev) => ({
+                                        ...prev,
+                                        [day]: (prev[day] ?? []).map((s) =>
+                                          s.id === slot.id ? { ...s, end: value } : s,
+                                        ),
+                                      }));
+                                    }}
+                                    className="w-28 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAvailabilityError('');
+                                    setAvailabilitySuccess('');
+                                    setAvailability((prev) => ({
+                                      ...prev,
+                                      [day]: (prev[day] ?? []).filter((s) => s.id !== slot.id),
+                                    }));
+                                  }}
+                                  className="self-start rounded-md border border-destructive/40 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  },
+                )}
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={availabilitySaving}
+                  onClick={async () => {
+                    setAvailabilityError('');
+                    setAvailabilitySuccess('');
+                    if (!email) {
+                      setAvailabilityError('Email missing. Please sign in again.');
+                      return;
+                    }
+                    const allSlots: { day_of_week: number; start_time: string; end_time: string }[] = [];
+                    Object.entries(availability).forEach(([dayStr, slots]) => {
+                      const day = Number(dayStr);
+                      slots.forEach((slot) => {
+                        if (slot.start && slot.end) {
+                          allSlots.push({
+                            day_of_week: day,
+                            start_time: slot.start,
+                            end_time: slot.end,
+                          });
+                        }
+                      });
+                    });
+
+                    for (const slot of allSlots) {
+                      if (slot.end_time <= slot.start_time) {
+                        setAvailabilityError('Each slot end time must be after its start time.');
+                        return;
+                      }
+                    }
+
+                    const byDay: Record<number, { start: string; end: string }[]> = {};
+                    allSlots.forEach((slot) => {
+                      byDay[slot.day_of_week] ??= [];
+                      byDay[slot.day_of_week].push({
+                        start: slot.start_time,
+                        end: slot.end_time,
+                      });
+                    });
+                    for (const [dayStr, slots] of Object.entries(byDay)) {
+                      const sorted = [...slots].sort((a, b) =>
+                        a.start.localeCompare(b.start),
+                      );
+                      for (let i = 1; i < sorted.length; i += 1) {
+                        const prev = sorted[i - 1];
+                        const curr = sorted[i];
+                        if (curr.start < prev.end) {
+                          setAvailabilityError(
+                            `Slots overlap on ${[
+                              'Monday',
+                              'Tuesday',
+                              'Wednesday',
+                              'Thursday',
+                              'Friday',
+                              'Saturday',
+                              'Sunday',
+                            ][Number(dayStr)]}.`,
+                          );
+                          return;
+                        }
+                      }
+                    }
+
+                    setAvailabilitySaving(true);
+                    try {
+                      const res = await fetch('/api/counselors/availability', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, slots: allSlots }),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) {
+                        setAvailabilityError(
+                          res.status === 403 ? 'You do not have permission to update availability.' : (data.error || 'Failed to save availability. Please try again.'),
+                        );
+                      } else {
+                        setAvailabilitySuccess('Availability saved.');
+                      }
+                    } finally {
+                      setAvailabilitySaving(false);
+                    }
+                  }}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {availabilitySaving ? 'Saving...' : 'Save Availability'}
+                </button>
+                <p className="text-xs text-muted-foreground">
+                  You can update these times at any point to adjust your schedule.
+                </p>
+              </div>
             </section>
           )}
 

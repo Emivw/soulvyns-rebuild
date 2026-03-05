@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const emailRaw = (body?.email ?? '').trim();
     const email = emailRaw.toLowerCase();
-    const displayName = (body?.displayName ?? body?.display_name ?? emailRaw.split('@')[0] || 'Counselor').trim();
+    const displayName = (body?.displayName ?? body?.display_name ?? (emailRaw.split('@')[0] || 'Counselor')).trim();
 
     if (!email) {
       return NextResponse.json({ error: 'email is required' }, { status: 400 });

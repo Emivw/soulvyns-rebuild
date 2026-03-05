@@ -40,10 +40,18 @@ export default function Navbar() {
   }
 
   const linkClass = (href: string) =>
-    `font-medium transition-colors hover:text-primary ${pathname === href ? 'text-primary' : 'text-muted-foreground'}`;
+    `font-medium transition-colors hover:text-primary ${
+      pathname === href ? 'text-primary' : 'text-muted-foreground'
+    }`;
+
+  const clientDisplayName = clientUser?.email
+    ? clientUser.email.split('@')[0].replace('.', ' ')
+    : null;
+
+  const clientInitial = clientUser?.email ? clientUser.email.charAt(0).toUpperCase() : '?';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-card/95 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-white">
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           <HeartHandshake className="h-7 w-7 text-primary" />
@@ -62,20 +70,17 @@ export default function Navbar() {
           {loading ? (
             <span className="text-sm text-muted-foreground">Loading...</span>
           ) : isClient ? (
-            <>
-              <Link href="/book" className={linkClass('/book')}>Book</Link>
-              <Link href="/bookings" className={linkClass('/bookings')}>My Bookings</Link>
-              <Link href="/client/dashboard" className="text-sm text-muted-foreground">{clientUser?.email}</Link>
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push('/');
-                }}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                Logout
-              </button>
-            </>
+            <Link
+              href="/client/dashboard"
+              className="flex items-center gap-2 rounded-full border border-border px-3 py-1 text-sm hover:bg-muted"
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                {clientInitial}
+              </span>
+              <span className="text-sm text-foreground">
+                {clientDisplayName || 'Dashboard'}
+              </span>
+            </Link>
           ) : isCounselor ? (
             <>
               <Link href="/counselor/dashboard" className={linkClass('/counselor/dashboard')}>Dashboard</Link>
@@ -131,19 +136,30 @@ export default function Navbar() {
             </Link>
           ))}
           {isClient && (
-            <>
-              <Link href="/book" className={`block py-2 ${linkClass('/book')}`} onClick={() => setMobileOpen(false)}>Book</Link>
-              <Link href="/bookings" className={`block py-2 ${linkClass('/bookings')}`} onClick={() => setMobileOpen(false)}>My Bookings</Link>
-              <Link href="/client/dashboard" className="block py-2 text-muted-foreground" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-            </>
-          )}
-          {isCounselor && (
-            <Link href="/counselor/dashboard" className={`block py-2 ${linkClass('/counselor/dashboard')}`} onClick={() => setMobileOpen(false)}>Dashboard</Link>
+            <Link
+              href="/client/dashboard"
+              className="block py-2 text-sm text-muted-foreground"
+              onClick={() => setMobileOpen(false)}
+            >
+              Client dashboard
+            </Link>
           )}
           {!isClient && !isCounselor && (
             <>
-              <Link href="/login" className="block py-2 text-muted-foreground" onClick={() => setMobileOpen(false)}>Login</Link>
-              <Link href="/register" className="block py-2 text-primary font-medium" onClick={() => setMobileOpen(false)}>Register</Link>
+              <Link
+                href="/login"
+                className="block py-2 text-muted-foreground"
+                onClick={() => setMobileOpen(false)}
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="block py-2 text-primary font-medium"
+                onClick={() => setMobileOpen(false)}
+              >
+                Register
+              </Link>
             </>
           )}
         </div>
