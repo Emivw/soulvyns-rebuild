@@ -16,7 +16,7 @@ function isSessionsTableMissing(error: { message?: string } | null): boolean {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -25,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }
@@ -91,7 +91,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -100,7 +100,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     if (!id) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
     }

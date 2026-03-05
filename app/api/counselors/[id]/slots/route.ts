@@ -8,10 +8,10 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: counselorId } = await params;
+    const { id: counselorId } = params;
     if (!counselorId) {
       return NextResponse.json({ error: 'Counselor ID required' }, { status: 400 });
     }
