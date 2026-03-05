@@ -11,8 +11,8 @@ interface ClientBooking {
   amount: string;
   meeting_url: string | null;
   created_at: string;
-  counselors: { display_name: string } | null;
-  availability_slots: { start_time: string; end_time: string } | null;
+  counselors: { display_name: string }[] | null;
+  availability_slots: { start_time: string; end_time: string }[] | null;
 }
 
 interface ClientProfile {
@@ -131,11 +131,11 @@ export default function ClientDashboardPage() {
         if (!cancelled && !hasProfileError) setError('');
         const list = Array.isArray(data) ? (data as ClientBooking[]) : [];
         const upcoming = list.filter((b) => {
-          const start = b?.availability_slots?.start_time;
+          const start = b?.availability_slots?.[0]?.start_time;
           return start && new Date(start) >= new Date(now);
         });
         const past = list.filter((b) => {
-          const start = b?.availability_slots?.start_time;
+          const start = b?.availability_slots?.[0]?.start_time;
           return start && new Date(start) < new Date(now);
         });
         setBookings([...upcoming, ...past]);
@@ -154,7 +154,7 @@ export default function ClientDashboardPage() {
   }, [router]);
 
   const upcomingBookings = bookings.filter((b) => {
-    const start = b.availability_slots?.start_time;
+    const start = b.availability_slots?.[0]?.start_time;
     return start && new Date(start) >= new Date();
   });
 
@@ -572,13 +572,13 @@ export default function ClientDashboardPage() {
                     <div className="flex-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Counselor</p>
                       <h3 className="font-headline text-lg font-semibold text-foreground mb-2">
-                        {booking.counselors?.display_name ?? '—'}
+                        {booking.counselors?.[0]?.display_name ?? '—'}
                       </h3>
                       <div className="space-y-1 text-sm text-muted-foreground">
                         <p>
                           <span className="font-medium">Date & time:</span>{' '}
-                          {booking.availability_slots?.start_time
-                            ? new Date(booking.availability_slots.start_time).toLocaleString('en-US', {
+                          {booking.availability_slots?.[0]?.start_time
+                            ? new Date(booking.availability_slots[0].start_time).toLocaleString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
@@ -588,8 +588,8 @@ export default function ClientDashboardPage() {
                               })
                             : '—'}{' '}
                           –{' '}
-                          {booking.availability_slots?.end_time
-                            ? new Date(booking.availability_slots.end_time).toLocaleTimeString('en-US', {
+                          {booking.availability_slots?.[0]?.end_time
+                            ? new Date(booking.availability_slots[0].end_time).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })
