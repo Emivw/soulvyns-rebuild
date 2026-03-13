@@ -529,7 +529,7 @@ export default function ClientDashboardPage() {
                   Book a session
                 </Link>
                 <Link
-                  href="/bookings"
+                  href="/my-bookings"
                   className="inline-flex w-full items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted/40 transition"
                 >
                   My bookings

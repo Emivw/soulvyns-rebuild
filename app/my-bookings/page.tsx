@@ -1,36 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+// Canonical My Bookings route. Reuse the same component as /bookings
+// so both URLs stay in sync.
+import BookingsPage from '../bookings/page';
 
-export default function MyBookingsGate() {
-  const router = useRouter();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function check() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (cancelled) return;
-
-      if (user) {
-        router.replace('/bookings');
-      } else {
-        router.replace('/login');
-      }
-    }
-
-    check();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
-
-  return null;
-}
+export default BookingsPage;
 

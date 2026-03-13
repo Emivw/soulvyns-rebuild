@@ -24,8 +24,8 @@ export default function BookingsError({
           >
             Try again
           </button>
-          <Link
-            href="/bookings"
+            <Link
+              href="/my-bookings"
             className="inline-block border border-border px-6 py-3 rounded-lg font-medium text-foreground hover:bg-muted/50"
           >
             My Bookings

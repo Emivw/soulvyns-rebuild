@@ -112,7 +112,7 @@ export default function BookingSuccessPage() {
 
           <div className="space-y-4">
             <Link
-              href="/bookings"
+              href="/my-bookings"
               className="block w-full bg-blue-500 text-white py-3 px-6 rounded-lg hover:bg-blue-600 transition font-medium"
             >
               View My Bookings
