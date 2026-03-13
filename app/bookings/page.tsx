@@ -40,8 +40,8 @@ export default function BookingsPage() {
         .from('bookings')
         .select(`
           *,
-          counselors!inner(display_name),
-          availability_slots!inner(start_time, end_time)
+          counselors(display_name),
+          availability_slots(start_time, end_time)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
