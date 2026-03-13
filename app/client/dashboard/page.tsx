@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 interface ClientBooking {
   id: string;
@@ -284,9 +285,9 @@ export default function ClientDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen py-8 bg-background">
+    <main className="min-h-screen py-8 bg-gradient-to-br from-emerald-50 via-white to-sky-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-card border border-border shadow rounded-lg p-6">
+        <FadeInOnScroll className="bg-card/95 border border-border shadow-xl rounded-2xl p-6">
           <h1 className="font-headline text-3xl font-bold text-foreground mb-2">Client Dashboard</h1>
           <p className="text-muted-foreground mb-6">
             {userEmail ? (
@@ -550,26 +551,31 @@ export default function ClientDashboardPage() {
             </aside>
           </div>
 
-          <h2 className="font-headline text-xl font-semibold mt-10 mb-6 text-foreground">
-            Upcoming sessions
-          </h2>
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          ) : upcomingBookings.length === 0 ? (
-            <div className="text-center py-12 border border-border rounded-lg">
-              <p className="text-muted-foreground text-lg">No upcoming sessions.</p>
-              <p className="text-muted-foreground/80 text-sm mt-2">Book a session to get started.</p>
-              <Link href="/book" className="inline-block mt-4 text-primary hover:underline font-medium">
-                Book a session →
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {upcomingBookings.map((booking) => (
-                <div key={booking.id} className="border border-border rounded-lg p-6 hover:shadow-md transition bg-card">
+          <FadeInOnScroll className="mt-10">
+            <h2 className="font-headline text-xl font-semibold mb-6 text-foreground">
+              Upcoming sessions
+            </h2>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <p className="mt-4 text-muted-foreground">Loading...</p>
+              </div>
+            ) : upcomingBookings.length === 0 ? (
+              <div className="text-center py-12 border border-border rounded-lg">
+                <p className="text-muted-foreground text-lg">No upcoming sessions.</p>
+                <p className="text-muted-foreground/80 text-sm mt-2">Book a session to get started.</p>
+                <Link href="/book" className="inline-block mt-4 text-primary hover:underline font-medium">
+                  Book a session →
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {upcomingBookings.map((booking, index) => (
+                  <div
+                    key={booking.id}
+                    className="border border-border rounded-lg p-6 hover:shadow-md transition bg-card"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Counselor</p>
@@ -636,10 +642,11 @@ export default function ClientDashboardPage() {
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </FadeInOnScroll>
 
           {!loading && bookings.length > upcomingBookings.length && (
             <div className="mt-10">
@@ -647,7 +654,7 @@ export default function ClientDashboardPage() {
               <p className="text-muted-foreground text-sm">You have {bookings.length - upcomingBookings.length} past session(s).</p>
             </div>
           )}
-        </div>
+        </FadeInOnScroll>
       </div>
     </main>
   );

@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from '@/components/icons';
 import { Calendar } from '@/components/Calendar';
 import { supabase } from '@/lib/supabaseClient';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 const PLACEHOLDER = 'Information not available';
 
@@ -173,116 +174,118 @@ export default function CounselorProfilePage() {
   const specList = safeSpecializations(counselor.specializations);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <Link
-        href="/counselors"
-        className="text-sm font-medium text-primary hover:underline mb-6 inline-block"
-      >
-        ← Back to counselors
-      </Link>
+    <div className="bg-gradient-to-b from-emerald-50 via-white to-sky-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <Link
+          href="/counselors"
+          className="text-sm font-medium text-primary hover:underline mb-6 inline-block"
+        >
+          ← Back to counselors
+        </Link>
 
-      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 sm:mb-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
-          <div className="flex-shrink-0 flex justify-center sm:justify-start">
-            {counselor.avatar_url ? (
-              <img
-                src={counselor.avatar_url}
-                alt=""
-                className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-2 border-primary/20"
-              />
-            ) : (
-              <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-2xl sm:text-3xl font-semibold text-primary">
-                {counselor.display_name?.trim()
-                  ? counselor.display_name.trim().charAt(0).toUpperCase()
-                  : '?'}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1 space-y-4">
-            <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">
-              {safeStr(counselor.display_name)}
-            </h1>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                Specialization
-              </h3>
-              {specList.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {specList.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+        <FadeInOnScroll className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 sm:mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
+            <div className="flex-shrink-0 flex justify-center sm:justify-start">
+              {counselor.avatar_url ? (
+                <img
+                  src={counselor.avatar_url}
+                  alt=""
+                  className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-2 border-primary/20"
+                />
               ) : (
-                <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
+                <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-2xl sm:text-3xl font-semibold text-primary">
+                  {counselor.display_name?.trim()
+                    ? counselor.display_name.trim().charAt(0).toUpperCase()
+                    : '?'}
+                </div>
               )}
             </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                Credentials &amp; accolades
-              </h3>
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {safeStr(counselor.accolades)}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                Bio
-              </h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {safeStr(counselor.bio)}
-              </p>
+            <div className="min-w-0 flex-1 space-y-4">
+              <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">
+                {safeStr(counselor.display_name)}
+              </h1>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Specialization
+                </h3>
+                {specList.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {specList.map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{PLACEHOLDER}</p>
+                )}
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Credentials &amp; accolades
+                </h3>
+                <p className="text-sm text-foreground whitespace-pre-wrap">
+                  {safeStr(counselor.accolades)}
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                  Bio
+                </h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {safeStr(counselor.bio)}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </FadeInOnScroll>
 
-      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
-        <h2 className="font-headline text-lg sm:text-xl font-semibold text-foreground mb-3">
-          Choose a date
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Pick a date to see available time slots with this counselor on the next step. Dates with availability are highlighted.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
-          <Calendar
-            selectedDate={selectedDate}
-            onSelect={(date) => setSelectedDate(date)}
-            highlightDates={availableDates}
-            title="Availability"
-          />
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {selectedDate
-                ? `Selected date: ${new Date(selectedDate).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}`
-                : 'Select a highlighted date on the calendar to continue.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                if (!selectedDate || !id) return;
-                router.push(`/book/${encodeURIComponent(id)}?date=${selectedDate}`);
-              }}
-              disabled={!selectedDate}
-              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
-            >
-              View available times
-            </button>
-            <p className="text-xs text-muted-foreground">
-              You&apos;ll choose a specific time slot on the next page.
-            </p>
+        <FadeInOnScroll className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+          <h2 className="font-headline text-lg sm:text-xl font-semibold text-foreground mb-3">
+            Choose a date
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Pick a date to see available time slots with this counselor on the next step. Dates with availability are highlighted.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
+            <Calendar
+              selectedDate={selectedDate}
+              onSelect={(date) => setSelectedDate(date)}
+              highlightDates={availableDates}
+              title="Availability"
+            />
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {selectedDate
+                  ? `Selected date: ${new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}`
+                  : 'Select a highlighted date on the calendar to continue.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedDate || !id) return;
+                  router.push(`/book/${encodeURIComponent(id)}?date=${selectedDate}`);
+                }}
+                disabled={!selectedDate}
+                className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+              >
+                View available times
+              </button>
+              <p className="text-xs text-muted-foreground">
+                You&apos;ll choose a specific time slot on the next page.
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </FadeInOnScroll>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -58,9 +59,9 @@ export default function RegisterPage() {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-50 via-white to-sky-50">
         <div className="max-w-md w-full">
-          <div className="bg-white shadow-lg rounded-lg p-8 text-center">
+          <FadeInOnScroll className="bg-white shadow-xl rounded-2xl p-8 text-center border border-emerald-100">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-6">
               <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -75,22 +76,24 @@ export default function RegisterPage() {
             </p>
             <Link
               href="/login"
-              className="inline-block w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition font-medium text-center"
+              className="inline-block w-full bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 transition font-medium text-center"
             >
               Go to sign in
             </Link>
-          </div>
+          </FadeInOnScroll>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-50 via-white to-sky-50">
       <div className="max-w-md w-full">
-        <div className="bg-white shadow-lg rounded-lg p-8">
+        <FadeInOnScroll className="bg-white shadow-xl rounded-2xl p-8 border border-emerald-100">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">Create account</h1>
-          <p className="text-gray-600 text-center mb-8">Sign up to book counseling sessions. You'll verify your email before signing in.</p>
+          <p className="text-gray-600 text-center mb-8">
+            Sign up to book counseling sessions. You&apos;ll verify your email before signing in.
+          </p>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -110,7 +113,7 @@ export default function RegisterPage() {
                 placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
                 disabled={loading}
               />
@@ -127,7 +130,7 @@ export default function RegisterPage() {
                 placeholder="Any email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
                 disabled={loading}
               />
@@ -144,7 +147,7 @@ export default function RegisterPage() {
                 placeholder="Minimum 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
                 minLength={6}
                 disabled={loading}
@@ -154,13 +157,22 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition font-medium"
+              className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition font-medium shadow-sm hover:shadow-md"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Creating account...
                 </span>
@@ -172,11 +184,11 @@ export default function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+            <Link href="/login" className="text-emerald-600 hover:text-emerald-800 font-medium">
               Sign in
             </Link>
           </p>
-        </div>
+        </FadeInOnScroll>
       </div>
     </div>
   );

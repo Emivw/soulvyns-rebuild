@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 const PAYFAST_PAYLOAD_KEY = 'soulvyns_payfast_payload';
 
@@ -84,41 +85,45 @@ export default function BookingPayPage() {
 
   if (status === 'error' && error) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-12 px-4">
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-amber-50 via-white to-rose-50">
         <div className="max-w-md w-full text-center space-y-4">
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button
-              type="button"
-              onClick={goToPayFast}
-              className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90"
-            >
-              Try again
-            </button>
-            <Link
-              href="/book"
-              className="inline-block border border-border px-6 py-3 rounded-lg font-medium text-foreground hover:bg-muted/50"
-            >
-              Back to booking
-            </Link>
-          </div>
+          <FadeInOnScroll>
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800">{error}</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={goToPayFast}
+                className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:bg-primary/90"
+              >
+                Try again
+              </button>
+              <Link
+                href="/book"
+                className="inline-block border border-border px-6 py-3 rounded-lg font-medium text-foreground hover:bg-muted/50"
+              >
+                Back to booking
+              </Link>
+            </div>
+          </FadeInOnScroll>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 bg-gradient-to-br from-amber-50 via-white to-rose-50">
       <div className="max-w-md w-full text-center">
-        <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mb-4" />
-        <p className="text-lg font-medium text-foreground">
-          {status === 'redirecting' ? 'Redirecting to PayFast...' : 'Preparing payment...'}
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Do not close this window.
-        </p>
+        <FadeInOnScroll>
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mb-4" />
+          <p className="text-lg font-medium text-foreground">
+            {status === 'redirecting' ? 'Redirecting to PayFast...' : 'Preparing payment...'}
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Do not close this window.
+          </p>
+        </FadeInOnScroll>
       </div>
     </div>
   );

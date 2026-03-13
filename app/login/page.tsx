@@ -6,6 +6,7 @@ import { useMsal } from '@azure/msal-react';
 import { useRouter } from 'next/navigation';
 import { loginRequest } from '@/lib/msalConfig';
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 /**
  * Unified login: Client (email/password) and Counselor (Microsoft popup) on one screen.
@@ -195,18 +196,18 @@ export default function LoginPage() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
+        <div className="text-slate-100">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
       <div className="max-w-md w-full">
-        <div className="bg-white shadow-lg rounded-lg p-8">
+        <FadeInOnScroll className="bg-white/95 shadow-2xl rounded-2xl p-8 border border-emerald-50">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">Sign in</h1>
-          <p className="text-gray-600 text-center mb-8">Choose how you want to sign in</p>
+          <p className="text-gray-600 text-center mb-6">Choose how you want to access Soulvyns.</p>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -226,7 +227,7 @@ export default function LoginPage() {
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
                 disabled={clientLoading}
               />
@@ -238,14 +239,14 @@ export default function LoginPage() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 required
                 disabled={clientLoading}
               />
               <button
                 type="submit"
                 disabled={clientLoading}
-                className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-70 disabled:cursor-not-allowed transition font-medium"
+                className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 disabled:opacity-70 disabled:cursor-not-allowed transition font-medium shadow-sm hover:shadow-md"
               >
                 {clientLoading ? 'Signing in...' : 'Sign in as client'}
               </button>
@@ -265,7 +266,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleCounselorLogin}
               disabled={popupLoading}
-              className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-900 disabled:opacity-70 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-2"
+              className="w-full bg-slate-900 text-white py-3 px-4 rounded-lg hover:bg-black disabled:opacity-70 disabled:cursor-not-allowed transition font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
             >
               {popupLoading ? 'Opening sign-in window...' : 'Sign in with Microsoft'}
             </button>
@@ -273,11 +274,11 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-sm text-gray-600">
             New to Soulvyns?{' '}
-            <Link href="/register" className="text-blue-600 hover:text-blue-800 font-medium">
+            <Link href="/register" className="text-emerald-600 hover:text-emerald-800 font-medium">
               Sign up
             </Link>
           </p>
-        </div>
+        </FadeInOnScroll>
       </div>
     </div>
   );

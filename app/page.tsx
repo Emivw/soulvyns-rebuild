@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <main className="min-h-screen flex flex-col bg-white">
       {/* Hero */}
-      <section className="relative flex-1 flex w-full items-center justify-center bg-[url('/assets/photos/pexels-cottonbro-4098223.jpg')] bg-cover bg-center bg-no-repeat">
+      <section className="relative flex w-full items-center justify-center bg-[url('/assets/photos/pexels-cottonbro-4098223.jpg')] bg-cover bg-center bg-no-repeat min-h-[calc(100vh-64px)]">
         <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-emerald-800/40" />
         <div className="relative max-w-5xl mx-auto px-4 text-center md:px-6 text-white">
           <CounselorErrorBanner />

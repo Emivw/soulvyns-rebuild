@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 export default function TermsPage() {
   const [agreed1, setAgreed1] = useState(false);
@@ -10,9 +11,9 @@ export default function TermsPage() {
   const allChecked = agreed1 && agreed2 && agreed3;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        <FadeInOnScroll className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">
               Soulvyn Client Informed Consent &amp; Platform Agreement
@@ -129,7 +130,7 @@ export default function TermsPage() {
               </Link>
             </div>
           </div>
-        </div>
+        </FadeInOnScroll>
       </div>
     </div>
   );

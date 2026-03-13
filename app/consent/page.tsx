@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import { FadeInOnScroll } from '@/components/FadeInOnScroll';
 
 export default function ConsentPage() {
   return (
-    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-emerald-50 via-white to-sky-50">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-card border border-border rounded-lg shadow-sm p-8 md:p-10">
+        <FadeInOnScroll className="bg-card border border-border rounded-lg shadow-sm p-8 md:p-10">
           <h1 className="font-headline text-2xl md:text-3xl font-bold text-foreground mb-2">
             Soulvyn Online Psychology Platform
           </h1>
@@ -114,7 +115,7 @@ export default function ConsentPage() {
               Find a Counselor
             </Link>
           </div>
-        </div>
+        </FadeInOnScroll>
       </div>
     </main>
   );
