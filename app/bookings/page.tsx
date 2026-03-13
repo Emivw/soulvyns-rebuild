@@ -12,13 +12,13 @@ interface Booking {
   amount: string;
   meeting_url: string | null;
   created_at: string;
-  counselors: {
-    display_name: string;
-  };
-  availability_slots: {
+  counselors?: {
+    display_name?: string | null;
+  } | null;
+  availability_slots?: {
     start_time: string;
     end_time: string;
-  };
+  } | null;
 }
 
 export default function BookingsPage() {
@@ -52,7 +52,18 @@ export default function BookingsPage() {
         setBookings([]);
         return;
       }
-      setBookings(data || []);
+      const raw = (data as any[]) || [];
+      const normalized: Booking[] = raw.map((b) => {
+        const slotRel = (b as any).availability_slots;
+        const firstSlot =
+          Array.isArray(slotRel) && slotRel.length > 0 ? slotRel[0] : slotRel ?? null;
+        return {
+          ...(b as Booking),
+          counselors: (b as any).counselors ?? null,
+          availability_slots: firstSlot,
+        };
+      });
+      setBookings(normalized);
     } catch (err: unknown) {
       console.error('Error loading bookings:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
@@ -135,21 +146,28 @@ export default function BookingsPage() {
                         {booking.counselors?.display_name ?? '—'}
                       </h3>
                       <div className="space-y-1 text-sm text-gray-600">
-                        <p>
-                          <span className="font-medium">Date & Time:</span>{' '}
-                          {new Date(booking.availability_slots.start_time).toLocaleString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}{' '}
-                          - {new Date(booking.availability_slots.end_time).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
+                        {booking.availability_slots ? (
+                          <p>
+                            <span className="font-medium">Date & Time:</span>{' '}
+                            {new Date(booking.availability_slots.start_time).toLocaleString('en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}{' '}
+                            - {new Date(booking.availability_slots.end_time).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        ) : (
+                          <p>
+                            <span className="font-medium">Date & Time:</span>{' '}
+                            <span className="text-gray-400">Not available</span>
+                          </p>
+                        )}
                         <p>
                           <span className="font-medium">Amount:</span> R{parseFloat(booking.amount).toFixed(2)}
                         </p>
