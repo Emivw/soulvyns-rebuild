@@ -118,7 +118,7 @@ export default function ClientDashboardPage() {
             created_at,
             session_start,
             session_end,
-            counselors(display_name),
+            counselors(display_name)
           `)
           .eq('client_id', user.id)
           .order('created_at', { ascending: false });
