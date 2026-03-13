@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
@@ -20,6 +20,8 @@ export default function CounselorsPage() {
   const [counselors, setCounselors] = useState<Counselor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [specializationFilter, setSpecializationFilter] = useState<string>('all');
 
   useEffect(() => {
     async function load() {
@@ -38,6 +40,36 @@ export default function CounselorsPage() {
     }
     load();
   }, []);
+
+  const allSpecializations = useMemo(() => {
+    const set = new Set<string>();
+    counselors.forEach((c) => {
+      (c.specializations ?? []).forEach((s) => {
+        if (typeof s === 'string' && s.trim()) set.add(s.trim());
+      });
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [counselors]);
+
+  const filteredCounselors = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return counselors.filter((c) => {
+      const matchesSearch =
+        !term ||
+        c.display_name.toLowerCase().includes(term) ||
+        (c.bio ?? '').toLowerCase().includes(term) ||
+        (c.accolades ?? '').toLowerCase().includes(term) ||
+        (c.specializations ?? []).some((s) => (s ?? '').toLowerCase().includes(term));
+
+      const matchesSpec =
+        specializationFilter === 'all' ||
+        (c.specializations ?? []).some(
+          (s) => typeof s === 'string' && s.trim().toLowerCase() === specializationFilter.toLowerCase(),
+        );
+
+      return matchesSearch && matchesSpec;
+    });
+  }, [counselors, search, specializationFilter]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -60,6 +92,41 @@ export default function CounselorsPage() {
         </div>
       </FadeInOnScroll>
 
+      {/* Filters */}
+      <FadeInOnScroll className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1">
+          <label htmlFor="counselor-search" className="block text-xs font-medium text-muted-foreground mb-1">
+            Search by name, focus area or bio
+          </label>
+          <input
+            id="counselor-search"
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="e.g. anxiety, couples, trauma, Thato..."
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </div>
+        <div className="w-full sm:w-60">
+          <label htmlFor="counselor-specialization" className="block text-xs font-medium text-muted-foreground mb-1">
+            Filter by specialization
+          </label>
+          <select
+            id="counselor-specialization"
+            value={specializationFilter}
+            onChange={(e) => setSpecializationFilter(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          >
+            <option value="all">All specializations</option>
+            {allSpecializations.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      </FadeInOnScroll>
+
       {loading && (
         <div className="flex justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -72,9 +139,9 @@ export default function CounselorsPage() {
         </div>
       )}
 
-      {!loading && !error && counselors.length > 0 && (
+      {!loading && !error && filteredCounselors.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {counselors.map((c, index) => (
+          {filteredCounselors.map((c, index) => (
             <FadeInOnScroll key={c.id} delayMs={index * 50}>
               <article className="flex flex-col rounded-lg border border-border bg-card overflow-hidden shadow-sm transition hover:shadow-md hover:-translate-y-0.5 duration-200">
                 <div className="p-6 flex-1 flex flex-col">
@@ -126,9 +193,11 @@ export default function CounselorsPage() {
         </div>
       )}
 
-      {!loading && !error && counselors.length === 0 && (
+      {!loading && !error && filteredCounselors.length === 0 && (
         <div className="rounded-lg border border-border bg-card p-12 text-center">
-          <p className="text-muted-foreground">No counselors are currently listed. Check back later.</p>
+          <p className="text-muted-foreground">
+            No counselors match your filters. Try clearing the search or specialization.
+          </p>
           <Link href="/" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
             Back to home
           </Link>
