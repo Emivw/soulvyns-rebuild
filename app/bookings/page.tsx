@@ -14,9 +14,7 @@ interface Booking {
   created_at: string;
   session_start: string | null;
   session_end: string | null;
-  counselors?: {
-    display_name?: string | null;
-  } | null;
+  counselors?: { display_name?: string | null }[] | null;
 }
 
 export default function BookingsPage() {
@@ -45,7 +43,7 @@ export default function BookingsPage() {
           created_at,
           session_start,
           session_end,
-          counselors(display_name),
+          counselors(display_name)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
@@ -56,10 +54,13 @@ export default function BookingsPage() {
         setBookings([]);
         return;
       }
-      const normalized: Booking[] = (data as any[] ?? []).map((b) => ({
-        ...(b as Booking),
-        counselors: (b as any).counselors ?? null,
-      }));
+      const normalized: Booking[] = (data as any[] ?? []).map((b) => {
+        const row = b as any;
+        return {
+          ...(row as Booking),
+          counselors: Array.isArray(row.counselors) ? row.counselors : row.counselors ? [row.counselors] : null,
+        };
+      });
       setBookings(normalized);
     } catch (err: unknown) {
       console.error('Error loading bookings:', err);
