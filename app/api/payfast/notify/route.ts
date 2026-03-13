@@ -138,8 +138,8 @@ export async function POST(req: NextRequest) {
     if (paymentStatus === 'COMPLETE') {
       console.log('✅ [PAYFAST NOTIFY] Payment completed, updating booking status...');
       try {
-        // Enforce valid status transition (e.g. pending_payment -> paid).
-        assertValidStatusTransition(booking.status as BookingStatus, 'paid');
+        // Enforce valid status transition (e.g. pending_payment -> confirmed).
+        assertValidStatusTransition(booking.status as BookingStatus, 'confirmed');
       } catch (transitionError: any) {
         console.error('❌ [PAYFAST NOTIFY] Invalid status transition to paid:', {
           currentStatus: booking.status,
@@ -148,11 +148,11 @@ export async function POST(req: NextRequest) {
         return new Response('Invalid booking status for payment completion', { status: 400 });
       }
 
-      // Update booking to paid so it shows correctly on My Bookings and Teams link becomes available
+      // Update booking so it shows as confirmed/paid on My Bookings and Teams link becomes available
       const { error: updateError } = await supabaseAdmin
         .from('bookings')
         .update({
-          status: 'paid',
+          status: 'confirmed',
           payment_status: 'paid',
           payfast_payment_id: data.pf_payment_id || null,
           updated_at: new Date().toISOString(),
