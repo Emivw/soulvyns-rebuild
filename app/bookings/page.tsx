@@ -7,18 +7,15 @@ import Link from 'next/link';
 
 interface Booking {
   id: string;
-  slot_id?: string;
   status: string;
   payment_status?: string | null;
   amount: string;
   meeting_url: string | null;
   created_at: string;
+  session_start: string | null;
+  session_end: string | null;
   counselors?: {
     display_name?: string | null;
-  } | null;
-  availability_slots?: {
-    start_time: string;
-    end_time: string;
   } | null;
 }
 
@@ -41,14 +38,14 @@ export default function BookingsPage() {
         .from('bookings')
         .select(`
           id,
-          slot_id,
           status,
           payment_status,
           amount,
           meeting_url,
           created_at,
+          session_start,
+          session_end,
           counselors(display_name),
-          availability_slots(start_time, end_time)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
@@ -59,49 +56,10 @@ export default function BookingsPage() {
         setBookings([]);
         return;
       }
-      const raw = (data as any[]) || [];
-
-      // Fallback: if some bookings are missing availability_slots because of join quirks,
-      // fetch those slots directly by slot_id.
-      const missingSlotIds = raw
-        .filter((b) => {
-          const rel = (b as any).availability_slots;
-          return !rel || (Array.isArray(rel) && rel.length === 0);
-        })
-        .map((b) => (b as any).slot_id)
-        .filter((id) => typeof id === 'string');
-
-      let slotMap: Record<string, { start_time: string; end_time: string }> = {};
-      if (missingSlotIds.length > 0) {
-        const { data: slots, error: slotsError } = await supabase
-          .from('availability_slots')
-          .select('id, start_time, end_time')
-          .in('id', missingSlotIds);
-        if (slotsError) {
-          console.error('Error loading slots for bookings:', slotsError);
-        } else if (Array.isArray(slots)) {
-          slotMap = Object.fromEntries(
-            slots.map((s: any) => [s.id, { start_time: s.start_time, end_time: s.end_time }]),
-          );
-        }
-      }
-
-      const normalized: Booking[] = raw.map((b) => {
-        const slotRel = (b as any).availability_slots;
-        let firstSlot =
-          Array.isArray(slotRel) && slotRel.length > 0 ? slotRel[0] : slotRel ?? null;
-        if (!firstSlot) {
-          const fallback = slotMap[(b as any).slot_id];
-          if (fallback) {
-            firstSlot = fallback;
-          }
-        }
-        return {
-          ...(b as Booking),
-          counselors: (b as any).counselors ?? null,
-          availability_slots: firstSlot ?? null,
-        };
-      });
+      const normalized: Booking[] = (data as any[] ?? []).map((b) => ({
+        ...(b as Booking),
+        counselors: (b as any).counselors ?? null,
+      }));
       setBookings(normalized);
     } catch (err: unknown) {
       console.error('Error loading bookings:', err);
@@ -185,10 +143,10 @@ export default function BookingsPage() {
                         {booking.counselors?.display_name ?? '—'}
                       </h3>
                       <div className="space-y-1 text-sm text-gray-600">
-                        {booking.availability_slots ? (
+                        {booking.session_start && booking.session_end ? (
                           <p>
                             <span className="font-medium">Date & Time:</span>{' '}
-                            {new Date(booking.availability_slots.start_time).toLocaleString('en-US', {
+                            {new Date(booking.session_start).toLocaleString('en-US', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -196,7 +154,7 @@ export default function BookingsPage() {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}{' '}
-                            - {new Date(booking.availability_slots.end_time).toLocaleTimeString('en-US', {
+                            - {new Date(booking.session_end).toLocaleTimeString('en-US', {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}

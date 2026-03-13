@@ -148,6 +148,8 @@ export async function POST(request: NextRequest) {
         slot_id: slotId,
         status: INITIAL_BOOKING_STATUS,
         amount: amountNormalized,
+        session_start: slot.start_time,
+        session_end: slot.end_time,
       })
       .select()
       .single();
