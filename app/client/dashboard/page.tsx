@@ -116,7 +116,7 @@ export default function ClientDashboardPage() {
             meeting_url,
             created_at,
             counselors(display_name),
-            availability_slots!slot_id(start_time, end_time)
+            availability_slots(start_time, end_time)
           `)
           .eq('client_id', user.id)
           .order('created_at', { ascending: false });
@@ -129,7 +129,45 @@ export default function ClientDashboardPage() {
           return;
         }
         if (!cancelled && !hasProfileError) setError('');
-        const list = Array.isArray(data) ? (data as ClientBooking[]) : [];
+        const listRaw = Array.isArray(data) ? (data as any[]) : [];
+
+        // Fallback fetch of slots for any bookings missing availability_slots relation
+        const missingSlotIds = listRaw
+          .filter((b) => {
+            const rel = (b as any).availability_slots;
+            return !rel || (Array.isArray(rel) && rel.length === 0);
+          })
+          .map((b) => (b as any).slot_id)
+          .filter((id) => typeof id === 'string');
+
+        let slotMap: Record<string, { start_time: string; end_time: string }> = {};
+        if (missingSlotIds.length > 0) {
+          const { data: slots, error: slotsError } = await supabase
+            .from('availability_slots')
+            .select('id, start_time, end_time')
+            .in('id', missingSlotIds);
+          if (slotsError) {
+            console.error('Error loading slots for client dashboard bookings:', slotsError);
+          } else if (Array.isArray(slots)) {
+            slotMap = Object.fromEntries(
+              slots.map((s: any) => [s.id, { start_time: s.start_time, end_time: s.end_time }]),
+            );
+          }
+        }
+
+        const list: ClientBooking[] = listRaw.map((b) => {
+          const rel = (b as any).availability_slots;
+          let slots =
+            Array.isArray(rel) && rel.length > 0
+              ? rel
+              : rel
+              ? [rel]
+              : (slotMap[(b as any).slot_id] ? [slotMap[(b as any).slot_id]] : []);
+          return {
+            ...(b as ClientBooking),
+            availability_slots: slots,
+          };
+        });
         const upcoming = list.filter((b) => {
           const start = b?.availability_slots?.[0]?.start_time;
           return start && new Date(start) >= new Date(now);

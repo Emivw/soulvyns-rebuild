@@ -41,7 +41,7 @@ export default function BookingsPage() {
         .select(`
           *,
           counselors(display_name),
-          availability_slots!slot_id(start_time, end_time)
+          availability_slots(start_time, end_time)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
@@ -53,14 +53,46 @@ export default function BookingsPage() {
         return;
       }
       const raw = (data as any[]) || [];
+
+      // Fallback: if some bookings are missing availability_slots because of join quirks,
+      // fetch those slots directly by slot_id.
+      const missingSlotIds = raw
+        .filter((b) => {
+          const rel = (b as any).availability_slots;
+          return !rel || (Array.isArray(rel) && rel.length === 0);
+        })
+        .map((b) => (b as any).slot_id)
+        .filter((id) => typeof id === 'string');
+
+      let slotMap: Record<string, { start_time: string; end_time: string }> = {};
+      if (missingSlotIds.length > 0) {
+        const { data: slots, error: slotsError } = await supabase
+          .from('availability_slots')
+          .select('id, start_time, end_time')
+          .in('id', missingSlotIds);
+        if (slotsError) {
+          console.error('Error loading slots for bookings:', slotsError);
+        } else if (Array.isArray(slots)) {
+          slotMap = Object.fromEntries(
+            slots.map((s: any) => [s.id, { start_time: s.start_time, end_time: s.end_time }]),
+          );
+        }
+      }
+
       const normalized: Booking[] = raw.map((b) => {
         const slotRel = (b as any).availability_slots;
-        const firstSlot =
+        let firstSlot =
           Array.isArray(slotRel) && slotRel.length > 0 ? slotRel[0] : slotRel ?? null;
+        if (!firstSlot) {
+          const fallback = slotMap[(b as any).slot_id];
+          if (fallback) {
+            firstSlot = fallback;
+          }
+        }
         return {
           ...(b as Booking),
           counselors: (b as any).counselors ?? null,
-          availability_slots: firstSlot,
+          availability_slots: firstSlot ?? null,
         };
       });
       setBookings(normalized);
