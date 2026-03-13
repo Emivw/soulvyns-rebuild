@@ -1,12 +1,16 @@
 import { NextRequest } from 'next/server';
 import { verifyPayFastSignature } from '@/lib/payfast';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { createTeamsMeeting } from '@/lib/graphClient';
+import { createTeamsMeetingWithInvites } from '@/lib/teams';
 import { sendBookingConfirmation } from '@/lib/email';
+import {
+  BookingStatus,
+  assertValidStatusTransition,
+} from '@/lib/bookingLifecycle';
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  console.log('🔔 [PAYFAST NOTIFY] Webhook received');
+  console.log('🔔 [PAYFAST NOTIFY] PAYFAST webhook received');
 
   try {
     // Validate required environment variables
@@ -61,7 +65,7 @@ export async function POST(req: NextRequest) {
       return new Response('Invalid signature', { status: 400 });
     }
 
-    console.log('✅ [PAYFAST NOTIFY] Signature verified');
+    console.log('✅ [PAYFAST NOTIFY] Signature verified – PAYMENT verified');
 
     const bookingId = data.m_payment_id;
     const paymentStatus = data.payment_status;
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
     console.log(`📋 [PAYFAST NOTIFY] Processing payment for booking: ${bookingId}, status: ${paymentStatus}`);
 
     // Get booking to verify amount
-    console.log('💾 [PAYFAST NOTIFY] Fetching booking from database...');
+      console.log('💾 [PAYFAST NOTIFY] Fetching booking from database...');
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .select(
@@ -112,13 +116,23 @@ export async function POST(req: NextRequest) {
     // Only confirm on COMPLETE
     if (paymentStatus === 'COMPLETE') {
       console.log('✅ [PAYFAST NOTIFY] Payment completed, updating booking status...');
+      try {
+        // Enforce valid status transition (e.g. pending_payment -> paid).
+        assertValidStatusTransition(booking.status as BookingStatus, 'paid');
+      } catch (transitionError: any) {
+        console.error('❌ [PAYFAST NOTIFY] Invalid status transition to paid:', {
+          currentStatus: booking.status,
+          error: transitionError?.message,
+        });
+        return new Response('Invalid booking status for payment completion', { status: 400 });
+      }
 
       // Update booking to paid so it shows correctly on My Bookings and Teams link becomes available
       const { error: updateError } = await supabaseAdmin
         .from('bookings')
         .update({
           status: 'paid',
-          payment_status: paymentStatus,
+          payment_status: 'paid',
           payfast_payment_id: data.pf_payment_id || null,
           updated_at: new Date().toISOString(),
         })
@@ -129,7 +143,7 @@ export async function POST(req: NextRequest) {
         return new Response('Database update failed', { status: 500 });
       }
 
-      console.log(`✅ [PAYFAST NOTIFY] Booking ${bookingId} marked paid`);
+      console.log(`✅ [PAYFAST NOTIFY] BOOKING marked paid: ${bookingId}`);
 
       // Post-payment: 1) consent record, 2) Teams meeting, 3) confirmation emails to client + counselor
 
@@ -165,33 +179,37 @@ export async function POST(req: NextRequest) {
       } else if (!process.env.GRAPH_TENANT_ID || !process.env.GRAPH_CLIENT_ID || !process.env.GRAPH_CLIENT_SECRET) {
         console.warn('⚠️ [PAYFAST NOTIFY] Microsoft Graph env not set (GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET) – skipping Teams meeting');
       } else {
-        // Create Teams meeting
+        // Create Teams meeting as calendar event so counselor + client get Outlook/Teams invites
+        const organizerEmail = 'admin@soulvyns.co.za';
+        const counselorEmail =
+          booking.counselors?.ms_graph_user_email ?? booking.counselors?.email ?? '';
+        const clientEmail = booking.users_profile?.email ?? '';
+
         try {
-          console.log('👥 [PAYFAST NOTIFY] Creating Teams meeting...', {
-            organizer: booking.counselors.ms_graph_user_email,
-            attendee: booking.users_profile.email,
+          console.log('👥 [PAYFAST NOTIFY] CREATING TEAMS MEETING (with invites)…', {
+            organizer: organizerEmail,
+            counselor: counselorEmail,
+            client: clientEmail,
             startTime: slot.start_time,
             endTime: slot.end_time,
           });
 
-          const meeting = await createTeamsMeeting({
-            organizerEmail: booking.counselors.ms_graph_user_email,
-            attendeeEmail: booking.users_profile.email,
-            subject: `Counseling Session - ${booking.counselors.display_name}`,
+          const joinUrl = await createTeamsMeetingWithInvites({
+            organizerEmail,
+            subject: 'Soulvyns Counseling Session',
             startTime: slot.start_time,
             endTime: slot.end_time,
+            attendeeEmails: [counselorEmail, clientEmail].filter(Boolean),
+            attendeeNames: [
+              booking.counselors?.display_name ?? null,
+              booking.users_profile?.full_name ?? null,
+            ],
           });
 
-          console.log(`✅ [PAYFAST NOTIFY] Teams meeting created: ${meeting.meetingId}`);
-          meetingJoinUrl = meeting.joinUrl ?? null;
+          console.log('✅ [PAYFAST NOTIFY] TEAMS meeting created. Join URL:', joinUrl);
+          meetingJoinUrl = joinUrl || null;
         } catch (meetingError: any) {
           console.error('❌ [PAYFAST NOTIFY] Failed to create Teams meeting:', meetingError);
-          console.error('Meeting error details:', {
-            message: meetingError.message,
-            code: meetingError.code,
-            statusCode: meetingError.statusCode,
-            stack: meetingError.stack,
-          });
         }
 
         if (meetingJoinUrl) {
@@ -203,7 +221,7 @@ export async function POST(req: NextRequest) {
           if (meetingUpdateError) {
             console.error('⚠️ [PAYFAST NOTIFY] Failed to save meeting URL to booking:', meetingUpdateError);
           } else {
-            console.log(`✅ [PAYFAST NOTIFY] Meeting URL saved to booking ${bookingId}`);
+            console.log(`✅ [PAYFAST NOTIFY] MEETING URL saved to booking ${bookingId}`);
           }
         }
       }

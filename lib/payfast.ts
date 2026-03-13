@@ -148,8 +148,12 @@ export interface PayFastPaymentData {
  * No trailing slash.
  */
 export function getPayFastBaseUrl(): string {
-  const url = (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').trim().replace(/\/+$/, '');
-  return url || 'http://localhost:3000';
+  const raw =
+    (process.env.NEXT_PUBLIC_BASE_URL && process.env.NEXT_PUBLIC_BASE_URL.trim()) ||
+    'http://localhost:3000';
+  const cleaned = raw.replace(/\/+$/, '') || 'http://localhost:3000';
+  console.log('🌐 [PAYFAST] Base URL for callbacks:', cleaned);
+  return cleaned;
 }
 
 /**
@@ -161,11 +165,13 @@ export function getPayFastCallbackUrls(): {
   notify_url: string;
 } {
   const base = getPayFastBaseUrl();
-  return {
+  const urls = {
     return_url: `${base}/bookings/success`,
     cancel_url: `${base}/bookings/cancel`,
     notify_url: `${base}/api/payfast/notify`,
   };
+  console.log('[PAYFAST] Callback URLs in use:', urls);
+  return urls;
 }
 
 /**

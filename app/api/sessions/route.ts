@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createSupabaseServerClient } from '@/lib/supabaseServerClient';
+import { createTeamsMeeting } from '@/lib/graphClient';
+import { sendSessionConfirmationEmail } from '@/lib/email';
 
 const SESSIONS_SETUP_MESSAGE =
   'Booking is not set up yet. Run sql/sessions_table.sql in Supabase SQL Editor.';
@@ -138,7 +140,107 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ session_id: session.id });
+    const sessionId = session.id;
+
+    // Immediately simulate successful payment for this session:
+    // - Mark as paid & confirmed
+    // - Create Teams meeting (if Graph env set)
+    // - Save teams_link
+    // - Send confirmation email
+    try {
+      // Load full session + counselor + client info using admin client.
+      const { data: fullSession, error: fullError } = await supabaseAdmin
+        .from('sessions')
+        .select(
+          'id, session_date, start_time, end_time, status, payment_status, counselor_id, client_id, counselors!inner(display_name, email, ms_graph_user_email), users_profile!inner(email, full_name)',
+        )
+        .eq('id', sessionId)
+        .single();
+
+      if (fullError || !fullSession) {
+        console.error('[sessions] Failed to load session for completion:', fullError);
+      } else {
+        // Update session status/payment_status
+        const { error: updateError } = await supabaseAdmin
+          .from('sessions')
+          .update({
+            status: 'confirmed',
+            payment_status: 'paid',
+          })
+          .eq('id', sessionId);
+
+        if (updateError) {
+          console.error('[sessions] Failed to mark session paid/confirmed:', updateError);
+        }
+
+        let teamsLink: string | null = null;
+
+        if (
+          process.env.GRAPH_TENANT_ID &&
+          process.env.GRAPH_CLIENT_ID &&
+          process.env.GRAPH_CLIENT_SECRET
+        ) {
+          try {
+            const dateStrForIso = String(fullSession.session_date).slice(0, 10);
+            const startT = String(fullSession.start_time).slice(0, 8);
+            const endT = String(fullSession.end_time).slice(0, 8);
+            const startIso = new Date(`${dateStrForIso}T${startT}`).toISOString();
+            const endIso = new Date(`${dateStrForIso}T${endT}`).toISOString();
+
+            const meeting = await createTeamsMeeting({
+              organizerEmail:
+                fullSession.counselors?.ms_graph_user_email ??
+                fullSession.counselors?.email ??
+                '',
+              attendeeEmail: fullSession.users_profile?.email ?? '',
+              subject: `Counseling Session - ${fullSession.counselors?.display_name ?? 'Session'}`,
+              startTime: startIso,
+              endTime: endIso,
+            });
+
+            teamsLink = meeting.joinUrl ?? null;
+          } catch (meetingError: any) {
+            console.error('[sessions] Failed to create Teams meeting:', meetingError);
+          }
+        } else {
+          console.warn(
+            '[sessions] Graph env not set (GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET) – skipping Teams meeting',
+          );
+        }
+
+        if (teamsLink) {
+          const { error: linkError } = await supabaseAdmin
+            .from('sessions')
+            .update({ teams_link: teamsLink })
+            .eq('id', sessionId);
+          if (linkError) {
+            console.error('[sessions] Failed to save Teams link to session:', linkError);
+          }
+        }
+
+        const clientEmail = fullSession.users_profile?.email;
+        if (clientEmail && teamsLink) {
+          try {
+            await sendSessionConfirmationEmail({
+              clientEmail,
+              clientName: fullSession.users_profile?.full_name ?? 'Client',
+              counselorName: fullSession.counselors?.display_name ?? 'Counselor',
+              sessionDate: String(fullSession.session_date),
+              startTime: String(fullSession.start_time).slice(0, 5),
+              endTime: String(fullSession.end_time).slice(0, 5),
+              teamsLink,
+              sessionId,
+            });
+          } catch (emailError: any) {
+            console.error('[sessions] Failed to send session confirmation email:', emailError);
+          }
+        }
+      }
+    } catch (sideEffectError: any) {
+      console.error('[sessions] Error during post-create side effects:', sideEffectError);
+    }
+
+    return NextResponse.json({ session_id: sessionId });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Internal server error' },

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createPayFastPaymentUrl, createPayFastPaymentData } from '@/lib/payfast';
+import {
+  ACTIVE_BOOKING_STATUSES,
+  INITIAL_BOOKING_STATUS,
+} from '@/lib/bookingLifecycle';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -106,6 +110,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Extra safety: ensure there is no other active booking for this slot.
+    const { data: existingBookings, error: existingBookingsError } =
+      await supabaseAdmin
+        .from('bookings')
+        .select('id, status')
+        .eq('slot_id', slotId)
+        .in('status', ACTIVE_BOOKING_STATUSES as string[]);
+
+    if (existingBookingsError) {
+      console.error('❌ [BOOKING CREATE] Failed to check existing bookings:', existingBookingsError);
+      return NextResponse.json(
+        { error: 'Could not verify slot availability. Please try again.' },
+        { status: 500 },
+      );
+    }
+
+    if (existingBookings && existingBookings.length > 0) {
+      console.warn('⚠️ [BOOKING CREATE] Active booking already exists for this slot', {
+        bookingIds: existingBookings.map((b) => b.id),
+      });
+      return NextResponse.json(
+        { error: 'Slot is already booked' },
+        { status: 409 },
+      );
+    }
+
     // Normalize amount to 2 decimals so it matches PayFast (e.g. 500 -> 500.00)
     const amountNormalized = parseFloat(Number(amount).toFixed(2));
 
@@ -116,7 +146,7 @@ export async function POST(request: NextRequest) {
         client_id: user.id,
         counselor_id: counselorId,
         slot_id: slotId,
-        status: 'pending_payment',
+        status: INITIAL_BOOKING_STATUS,
         amount: amountNormalized,
       })
       .select()
@@ -151,12 +181,13 @@ export async function POST(request: NextRequest) {
       console.log('✅ [BOOKING CREATE] Client consent recorded');
     }
 
-    // Mark slot as booked
+    // Mark slot as booked (best-effort; we already checked for active bookings above).
     console.log('🔒 [BOOKING CREATE] Marking slot as booked...');
     const { error: slotUpdateError } = await supabaseAdmin
       .from('availability_slots')
       .update({ is_booked: true })
-      .eq('id', slotId);
+      .eq('id', slotId)
+      .eq('is_booked', false);
 
     if (slotUpdateError) {
       console.error('❌ [BOOKING CREATE] Failed to update slot:', slotUpdateError);

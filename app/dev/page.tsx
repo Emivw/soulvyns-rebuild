@@ -100,7 +100,8 @@ export default function DevPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Graph test failed');
+        const msg = [data.message || data.error || 'Graph test failed', data.hint].filter(Boolean).join('\n');
+        throw new Error(msg);
       }
 
       const joinUrl = data.joinUrl;

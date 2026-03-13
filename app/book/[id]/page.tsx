@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 
@@ -15,6 +15,7 @@ interface Slot {
 export default function SelectSlotPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const counselorId = params.id as string;
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -22,6 +23,23 @@ export default function SelectSlotPage() {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
+  const selectedDate = (searchParams.get('date') || '').trim(); // YYYY-MM-DD
+
+  const filteredSlots = useMemo(() => {
+    if (!selectedDate) return slots;
+    // Compare against the viewer's local date (matches what the browser date picker produces).
+    return slots.filter((slot) => {
+      const localDate = new Date(slot.start_time).toLocaleDateString('en-CA'); // YYYY-MM-DD
+      return localDate === selectedDate;
+    });
+  }, [slots, selectedDate]);
+
+  useEffect(() => {
+    // If the selected slot is no longer visible (date filter changed), clear it.
+    if (selectedSlot && !filteredSlots.some((s) => s.id === selectedSlot)) {
+      setSelectedSlot(null);
+    }
+  }, [filteredSlots, selectedSlot]);
 
   useEffect(() => {
     if (counselorId) {
@@ -38,8 +56,7 @@ export default function SelectSlotPage() {
         .select('*')
         .eq('counselor_id', counselorId)
         .eq('is_booked', false)
-        .gte('start_time', new Date().toISOString())
-        .order('start_time');
+        .order('start_time', { ascending: true });
 
       if (error) {
         console.error('Error loading slots:', error);
@@ -500,7 +517,7 @@ export default function SelectSlotPage() {
             </div>
           )}
 
-          {slots.length === 0 ? (
+          {filteredSlots.length === 0 ? (
             <div className="text-center py-12">
               {error ? (
                 <>
@@ -514,7 +531,18 @@ export default function SelectSlotPage() {
                   </button>
                 </>
               ) : (
-                <p className="text-gray-500 text-lg mb-4">No available slots at this time.</p>
+                <p className="text-gray-500 text-lg mb-4">
+                  {selectedDate ? 'No available sessions on that date.' : 'No available sessions yet.'}
+                </p>
+              )}
+              {selectedDate && slots.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/book/${encodeURIComponent(counselorId)}`)}
+                  className="inline-block bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 text-sm font-medium mr-2"
+                >
+                  Show all dates
+                </button>
               )}
               <Link
                 href="/book"
@@ -525,8 +553,11 @@ export default function SelectSlotPage() {
             </div>
           ) : (
             <>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Available Sessions{selectedDate ? ` — ${selectedDate}` : ''}
+              </h2>
               <div className="space-y-3 mb-6">
-                {slots.map((slot) => (
+                {filteredSlots.map((slot) => (
                   <button
                     key={slot.id}
                     onClick={() => setSelectedSlot(slot.id)}

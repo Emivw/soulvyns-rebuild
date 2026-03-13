@@ -1,9 +1,11 @@
- 'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from '@/components/icons';
+import { Calendar } from '@/components/Calendar';
+import { supabase } from '@/lib/supabaseClient';
 
 const PLACEHOLDER = 'Information not available';
 
@@ -41,6 +43,9 @@ export default function CounselorProfilePage() {
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +69,36 @@ export default function CounselorProfilePage() {
         }
         if (!cancelled) {
           setCounselor(data as Counselor);
+        }
+
+        // Load available dates from availability_slots so the calendar can highlight them.
+        const nowIso = new Date().toISOString();
+        const { data: slots, error: slotsError } = await supabase
+          .from('availability_slots')
+          .select('start_time')
+          .eq('counselor_id', id)
+          .eq('is_booked', false)
+          .gte('start_time', nowIso);
+
+        if (!cancelled) {
+          if (slotsError) {
+            console.error('[counselor profile] load slots error:', slotsError);
+          } else if (Array.isArray(slots)) {
+            const dates = Array.from(
+              new Set(
+                slots
+                  .map((s) => {
+                    const dt = s?.start_time ? new Date(String(s.start_time)) : null;
+                    return dt ? dt.toLocaleDateString('en-CA') : null;
+                  })
+                  .filter((v): v is string => !!v),
+              ),
+            );
+            setAvailableDates(dates);
+            if (!selectedDate && dates.length > 0) {
+              setSelectedDate(dates[0]);
+            }
+          }
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Something went wrong';
@@ -202,6 +237,49 @@ export default function CounselorProfilePage() {
                 {safeStr(counselor.bio)}
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+        <h2 className="font-headline text-lg sm:text-xl font-semibold text-foreground mb-3">
+          Choose a date
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Pick a date to see available time slots with this counselor on the next step. Dates with availability are highlighted.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] items-start">
+          <Calendar
+            selectedDate={selectedDate}
+            onSelect={(date) => setSelectedDate(date)}
+            highlightDates={availableDates}
+            title="Availability"
+          />
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {selectedDate
+                ? `Selected date: ${new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}`
+                : 'Select a highlighted date on the calendar to continue.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (!selectedDate || !id) return;
+                router.push(`/book/${encodeURIComponent(id)}?date=${selectedDate}`);
+              }}
+              disabled={!selectedDate}
+              className="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed transition-colors"
+            >
+              View available times
+            </button>
+            <p className="text-xs text-muted-foreground">
+              You&apos;ll choose a specific time slot on the next page.
+            </p>
           </div>
         </div>
       </section>

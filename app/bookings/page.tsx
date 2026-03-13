@@ -8,6 +8,7 @@ import Link from 'next/link';
 interface Booking {
   id: string;
   status: string;
+  payment_status?: string | null;
   amount: string;
   meeting_url: string | null;
   created_at: string;
@@ -172,8 +173,7 @@ export default function BookingsPage() {
                           ? 'Pending payment'
                           : booking.status.replace('_', ' ').toUpperCase()}
                       </span>
-                      {booking.status === 'paid' || booking.status === 'confirmed' ? (
-                        booking.meeting_url ? (
+                      {booking.payment_status === 'paid' && booking.meeting_url ? (
                           <a
                             href={booking.meeting_url}
                             target="_blank"
@@ -182,9 +182,6 @@ export default function BookingsPage() {
                           >
                             Join Meeting
                           </a>
-                        ) : (
-                          <span className="block mt-3 text-sm text-gray-500">Meeting link will appear soon</span>
-                        )
                       ) : (
                         <span className="block mt-3 text-sm text-gray-400 cursor-not-allowed select-none line-through">
                           Join Meeting

@@ -1,29 +1,68 @@
 # Production: Seeding Data & PayFast
 
-## 1. Seed data so clients can try the site
+---
 
-The seed creates a test counselor, test client, and availability slots. In **production** it only runs if you pass a secret.
+## How to seed data (do this first)
 
-### In Vercel
+The seed creates a test counselor, test client, and availability slots so you can try the site. Do these steps **in order**.
 
-1. **Settings → Environment Variables**
-   - Add: `SEED_SECRET` = any long random string you keep private (e.g. from a password generator).
-   - Apply to **Production** (and Preview if you want).
+### Step 1: Deploy the latest code
 
-2. **Trigger the seed once** (after deployment):
-   - From your machine (or Postman), send a POST request to your **production** URL:
-     ```http
-     POST https://soulvyns-rebuild-git-main-emivws-projects.vercel.app/api/dev/seed
-     Content-Type: application/json
+- The seed-with-secret feature is already in the repo and has been pushed.
+- In Vercel, a new deployment should start automatically from the latest push. Wait for it to finish (or trigger **Redeploy** on the latest deployment if you need to).
 
-     {"secret": "YOUR_SEED_SECRET_VALUE"}
-     ```
-   - Replace the URL with your actual Vercel domain and `YOUR_SEED_SECRET_VALUE` with the value you set for `SEED_SECRET`.
-   - On success you get a JSON summary (counselor, client, slots). Test logins:
-     - **Counselor:** counselor@test.com / TestPassword123!
-     - **Client:** client@test.com / TestPassword123!
+### Step 2: Add the seed secret in Vercel
 
-3. **Optional:** Remove or rotate `SEED_SECRET` after seeding if you don’t plan to run it again.
+1. Open your project in Vercel → **Settings** → **Environment Variables**.
+2. Add a new variable:
+   - **Name:** `SEED_SECRET`
+   - **Value:** any long random string only you know (e.g. `mySecretSeed2024Prod` or use a password generator).
+   - **Environment:** Production (and Preview if you want).
+3. Save.
+
+### Step 3: Redeploy so the new env is used
+
+- After adding `SEED_SECRET`, Vercel needs to redeploy for it to be available.
+- Go to **Deployments** → open the **⋯** menu on the latest deployment → **Redeploy** (or push an empty commit and let it auto-deploy).
+
+### Step 4: Call the seed endpoint once
+
+From your computer (PowerShell, Command Prompt, or Postman):
+
+**Option A – PowerShell**
+
+```powershell
+$url = "https://soulvyns-rebuild-git-main-emivws-projects.vercel.app/api/dev/seed"
+$secret = "PUT_YOUR_SEED_SECRET_HERE"
+$body = @{ secret = $secret } | ConvertTo-Json
+Invoke-RestMethod -Uri $url -Method POST -Body $body -ContentType "application/json"
+```
+
+Replace `PUT_YOUR_SEED_SECRET_HERE` with the exact value you set for `SEED_SECRET` in Vercel. Replace the `$url` with your actual Vercel domain if different.
+
+**Option B – curl (if you have it)**
+
+```bash
+curl -X POST "https://soulvyns-rebuild-git-main-emivws-projects.vercel.app/api/dev/seed" \
+  -H "Content-Type: application/json" \
+  -d "{\"secret\": \"PUT_YOUR_SEED_SECRET_HERE\"}"
+```
+
+**Option B – Postman**
+
+- Method: **POST**
+- URL: `https://soulvyns-rebuild-git-main-emivws-projects.vercel.app/api/dev/seed`
+- Headers: `Content-Type: application/json`
+- Body (raw JSON): `{"secret": "PUT_YOUR_SEED_SECRET_HERE"}`
+
+On success you get JSON with `success: true` and a summary of what was created.
+
+### Step 5: Try the site
+
+- **Client login:** client@test.com / TestPassword123!
+- **Counselor login:** counselor@test.com / TestPassword123!
+
+You can browse counselors, book a slot as the client, and test the flow. PayFast you can fix next once this works.
 
 ---
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generatePayFastSignature, getPayFastCallbackUrls, getPayFastProcessUrl } from '@/lib/payfast';
+import { generatePayFastSignature, getPayFastBaseUrl, getPayFastCallbackUrls, getPayFastProcessUrl } from '@/lib/payfast';
 
 function escapeHtmlAttr(s: string): string {
   return s
@@ -36,9 +36,10 @@ export async function POST(request: NextRequest) {
 
     const merchant_id = process.env.PAYFAST_MERCHANT_ID || '10045991';
     const merchant_key = process.env.PAYFAST_MERCHANT_KEY || '2q99zezq11goo';
-    const { return_url, cancel_url, notify_url } = getPayFastCallbackUrls();
-
+    const base = getPayFastBaseUrl();
+    const { cancel_url, notify_url } = getPayFastCallbackUrls();
     const m_payment_id = slotId;
+    const return_url = `${base}/bookings/success?booking_id=${encodeURIComponent(m_payment_id)}`;
 
     const params: Record<string, string> = {
       merchant_id,

@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Calendar } from '@/components/Calendar';
 
 interface Booking {
   id: string;
@@ -133,6 +134,30 @@ export default function CounselorDashboard() {
   );
   const pastBookings = bookingsList.filter(
     (b) => b?.availability_slots?.start_time && b.availability_slots.start_time < now
+  );
+
+  const [selectedDay, setSelectedDay] = useState<string>('');
+
+  const upcomingByDay = useMemo(() => {
+    const map: Record<string, number> = {};
+    upcomingBookings.forEach((b) => {
+      if (!b?.availability_slots?.start_time) return;
+      const key = new Date(b.availability_slots.start_time).toLocaleDateString('en-CA');
+      map[key] = (map[key] || 0) + 1;
+    });
+    return map;
+  }, [upcomingBookings]);
+
+  const filteredUpcoming = useMemo(
+    () =>
+      selectedDay
+        ? upcomingBookings.filter(
+            (b) =>
+              b?.availability_slots?.start_time &&
+              new Date(b.availability_slots.start_time).toLocaleDateString('en-CA') === selectedDay,
+          )
+        : upcomingBookings,
+    [upcomingBookings, selectedDay],
   );
 
   if (!loading && accounts.length === 0) {
@@ -500,6 +525,48 @@ export default function CounselorDashboard() {
             </section>
           )}
 
+          {!counselorNotFound && (
+            <section className="mb-8 rounded-lg border border-border bg-muted/20 p-6">
+              <div className="flex flex-col gap-4 lg:flex-row">
+                <div className="flex-1">
+                  <h2 className="font-headline text-xl font-semibold mb-2 text-foreground">
+                    Calendar
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    See your upcoming sessions at a glance. Days with bookings are highlighted.
+                  </p>
+                  <Calendar
+                    selectedDate={selectedDay}
+                    onSelect={setSelectedDay}
+                    highlightDates={Object.keys(upcomingByDay)}
+                    title="Upcoming sessions"
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedDay
+                      ? `Showing sessions on ${new Date(selectedDay).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}.`
+                      : 'Select a day in the calendar to focus on sessions for that date.'}
+                  </p>
+                  {selectedDay && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDay('')}
+                      className="inline-flex items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                    >
+                      Clear date filter
+                    </button>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           <div className="mt-8">
             <h2 className="font-headline text-xl font-semibold mb-6 text-foreground">Upcoming sessions</h2>
             {loading ? (
@@ -514,7 +581,7 @@ export default function CounselorDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {upcomingBookings.map((booking) => (
+                {filteredUpcoming.map((booking) => (
                   <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">

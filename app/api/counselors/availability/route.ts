@@ -8,6 +8,36 @@ type SlotInput = {
   end_time: string;   // 'HH:MM'
 };
 
+function addDaysUtc(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d;
+}
+
+function toMonday0DayOfWeek(utcDate: Date): number {
+  // JS: 0=Sunday..6=Saturday. Our schema: 0=Monday..6=Sunday.
+  return (utcDate.getUTCDay() + 6) % 7;
+}
+
+function parseTimeHHMM(s: string): { hh: number; mm: number } | null {
+  const match = /^(\d{2}):(\d{2})$/.exec(s);
+  if (!match) return null;
+  const hh = Number(match[1]);
+  const mm = Number(match[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  if (hh < 0 || hh > 23) return null;
+  if (mm < 0 || mm > 59) return null;
+  return { hh, mm };
+}
+
+function minutesSinceMidnight(t: { hh: number; mm: number }): number {
+  return t.hh * 60 + t.mm;
+}
+
+function utcDateAtTime(baseUtc: Date, hh: number, mm: number): Date {
+  return new Date(Date.UTC(baseUtc.getUTCFullYear(), baseUtc.getUTCMonth(), baseUtc.getUTCDate(), hh, mm, 0, 0));
+}
+
 function validateSlots(slots: SlotInput[]): string | null {
   for (const slot of slots) {
     if (
@@ -22,6 +52,9 @@ function validateSlots(slots: SlotInput[]): string | null {
     }
     if (slot.start_time >= slot.end_time) {
       return 'Each slot end time must be after its start time.';
+    }
+    if (!parseTimeHHMM(slot.start_time) || !parseTimeHHMM(slot.end_time)) {
+      return 'Start and end times must be in HH:MM format.';
     }
   }
 
@@ -172,7 +205,95 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    // Generate concrete bookable slots for the next 30 days based on counselor_availability rules.
+    // We only remove future *unbooked* slots before regenerating; booked slots remain intact.
+    const nowUtc = new Date();
+    const rangeStart = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate(), 0, 0, 0, 0));
+    const rangeEnd = addDaysUtc(rangeStart, 30);
+
+    // Clear existing unbooked future slots in range to keep schedule consistent with new rules.
+    const { error: clearSlotsError } = await supabaseAdmin
+      .from('availability_slots')
+      .delete()
+      .eq('counselor_id', counselorId)
+      .eq('is_booked', false)
+      .gte('start_time', rangeStart.toISOString())
+      .lt('start_time', rangeEnd.toISOString());
+
+    if (clearSlotsError) {
+      // Non-fatal: availability rules saved, but slot generation failed.
+      return NextResponse.json(
+        { success: true, warning: `Availability saved, but failed to clear old slots: ${clearSlotsError.message}` },
+        { status: 200 }
+      );
+    }
+
+    // Fetch existing slots (including booked) to prevent duplicates.
+    const { data: existingSlots, error: existingSlotsError } = await supabaseAdmin
+      .from('availability_slots')
+      .select('start_time')
+      .eq('counselor_id', counselorId)
+      .gte('start_time', rangeStart.toISOString())
+      .lt('start_time', rangeEnd.toISOString());
+
+    if (existingSlotsError) {
+      return NextResponse.json(
+        { success: true, warning: `Availability saved, but failed to load existing slots: ${existingSlotsError.message}` },
+        { status: 200 }
+      );
+    }
+
+    const existingStartSet = new Set<string>(
+      (existingSlots ?? [])
+        .map((r) => (r as { start_time?: unknown }).start_time)
+        .filter((v): v is string => typeof v === 'string' && v.length > 0),
+    );
+
+    const slotsToInsert: { counselor_id: string; start_time: string; end_time: string }[] = [];
+
+    for (let dayOffset = 0; dayOffset < 30; dayOffset += 1) {
+      const day = addDaysUtc(rangeStart, dayOffset);
+      const dow = toMonday0DayOfWeek(day);
+      const rulesForDay = slots.filter((s) => s.day_of_week === dow);
+      if (rulesForDay.length === 0) continue;
+
+      for (const rule of rulesForDay) {
+        const start = parseTimeHHMM(rule.start_time);
+        const end = parseTimeHHMM(rule.end_time);
+        if (!start || !end) continue;
+
+        const startMin = minutesSinceMidnight(start);
+        const endMin = minutesSinceMidnight(end);
+
+        for (let m = startMin; m + 60 <= endMin; m += 60) {
+          const slotStart = utcDateAtTime(day, Math.floor(m / 60), m % 60);
+          const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+          const slotStartIso = slotStart.toISOString();
+          if (existingStartSet.has(slotStartIso)) continue;
+          existingStartSet.add(slotStartIso);
+          slotsToInsert.push({
+            counselor_id: counselorId,
+            start_time: slotStartIso,
+            end_time: slotEnd.toISOString(),
+          });
+        }
+      }
+    }
+
+    if (slotsToInsert.length > 0) {
+      const { error: slotInsertError } = await supabaseAdmin
+        .from('availability_slots')
+        .insert(slotsToInsert);
+
+      if (slotInsertError) {
+        return NextResponse.json(
+          { success: true, warning: `Availability saved, but failed to generate slots: ${slotInsertError.message}` },
+          { status: 200 }
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true, generated_slots: slotsToInsert.length });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : 'Internal server error' },

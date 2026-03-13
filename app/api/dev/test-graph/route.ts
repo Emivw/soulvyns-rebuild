@@ -117,14 +117,23 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: unknown) {
-    const err = error as { message?: string; code?: string; statusCode?: number };
+    const err = error as { message?: string; code?: string; statusCode?: number; cause?: unknown };
     console.error('❌ [TEST GRAPH] Error:', err);
+    const message = err?.message ?? 'Unknown error';
+    const isNetworkError =
+      message === 'fetch failed' ||
+      message?.toLowerCase().includes('econnrefused') ||
+      message?.toLowerCase().includes('enotfound') ||
+      message?.toLowerCase().includes('network');
     return NextResponse.json(
       {
         error: 'Graph test failed',
-        message: err?.message ?? 'Unknown error',
+        message,
         code: err?.code,
         statusCode: err?.statusCode,
+        hint: isNetworkError
+          ? 'Server could not reach Microsoft Graph. Check: 1) Firewall/proxy allows HTTPS to graph.microsoft.com 2) GRAPH_* env vars set in .env.local 3) Dev server can resolve graph.microsoft.com'
+          : undefined,
       },
       { status: 500 }
     );

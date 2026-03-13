@@ -17,6 +17,13 @@ export type SlotForEmail = {
   end_time: string;
 };
 
+export type SessionForEmail = {
+  id: string;
+  session_date: string;
+  start_time: string;
+  end_time: string;
+};
+
 const formatTime = (slot: SlotForEmail | null) =>
   slot?.start_time ? new Date(slot.start_time).toLocaleString() : 'See booking';
 
@@ -191,3 +198,66 @@ export async function sendBookingConfirmation(
     if (!counselorEmail) console.warn('⚠️ [EMAIL] No counselor email for booking notification');
   }
 }
+
+/**
+ * Send confirmation email for a session-based booking (using the `sessions` table).
+ * Email includes counselor name, session date, start_time, end_time, and Teams link.
+ */
+export async function sendSessionConfirmationEmail(params: {
+  clientEmail: string;
+  clientName: string;
+  counselorName: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  teamsLink: string;
+  sessionId: string;
+}): Promise<void> {
+  const from = process.env.AZURE_EMAIL_FROM?.trim();
+  const emailClient = getEmailClient();
+
+  const subject = 'Session confirmed – Soulvyn';
+  const html = `
+    <p>Hi ${escapeHtml(params.clientName)},</p>
+    <p>Your counseling session with <strong>${escapeHtml(params.counselorName)}</strong> is confirmed.</p>
+    <ul>
+      <li><strong>Date:</strong> ${escapeHtml(params.sessionDate)}</li>
+      <li><strong>Time:</strong> ${escapeHtml(params.startTime)}–${escapeHtml(params.endTime)}</li>
+      <li><strong>Session ID:</strong> ${escapeHtml(params.sessionId)}</li>
+    </ul>
+    <p>Join your Microsoft Teams meeting here:<br/>
+      <a href="${escapeHtml(params.teamsLink)}">${escapeHtml(params.teamsLink)}</a>
+    </p>
+    <p>— Soulvyn</p>
+  `.trim();
+
+  if (emailClient && from) {
+    try {
+      await sendOne(
+        emailClient,
+        from,
+        params.clientEmail,
+        params.clientName,
+        subject,
+        html,
+      );
+    } catch (err: unknown) {
+      console.error('❌ [EMAIL] Session confirmation send failed:', err);
+      throw err;
+    }
+  } else {
+    console.log('📧 [EMAIL] Session confirmation (no Azure config):', {
+      to: params.clientEmail,
+      subject,
+      body: {
+        counselorName: params.counselorName,
+        sessionDate: params.sessionDate,
+        startTime: params.startTime,
+        endTime: params.endTime,
+        teamsLink: params.teamsLink,
+        sessionId: params.sessionId,
+      },
+    });
+  }
+}
+
