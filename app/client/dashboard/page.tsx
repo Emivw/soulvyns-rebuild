@@ -579,8 +579,8 @@ export default function ClientDashboardPage() {
                       <div className="space-y-1 text-sm text-muted-foreground">
                         <p>
                           <span className="font-medium">Date & time:</span>{' '}
-                          {booking.availability_slots?.[0]?.start_time
-                            ? new Date(booking.availability_slots[0].start_time).toLocaleString('en-US', {
+                          {booking.session_start
+                            ? new Date(booking.session_start).toLocaleString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
@@ -590,8 +590,8 @@ export default function ClientDashboardPage() {
                               })
                             : '—'}{' '}
                           –{' '}
-                          {booking.availability_slots?.[0]?.end_time
-                            ? new Date(booking.availability_slots[0].end_time).toLocaleTimeString('en-US', {
+                          {booking.session_end
+                            ? new Date(booking.session_end).toLocaleTimeString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })
