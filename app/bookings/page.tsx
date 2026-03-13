@@ -20,6 +20,7 @@ interface Booking {
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
   const router = useRouter();
 
   const [error, setError] = useState('');
@@ -99,6 +100,76 @@ export default function BookingsPage() {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
+
+  const handleCompletePayment = async (booking: Booking) => {
+    try {
+      setError('');
+      setPayingBookingId(booking.id);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const clientEmail = user.email ?? '';
+      let firstName = '';
+      let lastName = '';
+
+      try {
+        const { data: profile } = await supabase
+          .from('users_profile')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.full_name) {
+          const parts = String(profile.full_name).trim().split(/\s+/);
+          firstName = parts[0] ?? '';
+          lastName = parts.slice(1).join(' ');
+        }
+      } catch {
+        // Non-fatal: fall back to empty names
+      }
+
+      const formRes = await fetch('/api/bookings/payfast-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          amount: parseFloat(booking.amount),
+          clientEmail,
+          firstName,
+          lastName,
+        }),
+      });
+
+      if (!formRes.ok) {
+        const err = await formRes.json().catch(() => ({}));
+        throw new Error(err?.error || err?.detail || 'Failed to start payment. Please try again.');
+      }
+
+      const html = await formRes.text();
+      const payWindow = window.open('', '_blank');
+      if (payWindow) {
+        payWindow.document.write(html);
+        payWindow.document.close();
+      } else {
+        // Fallback: replace current page if popup blocked
+        document.open();
+        document.write(html);
+        document.close();
+      }
+    } catch (err) {
+      console.error('Error restarting payment:', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not start payment. Please try again.'
+      );
+    } finally {
+      setPayingBookingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -189,15 +260,24 @@ export default function BookingsPage() {
                           ? 'Pending payment'
                           : booking.status.replace('_', ' ').toUpperCase()}
                       </span>
-                      {booking.payment_status === 'paid' && booking.meeting_url ? (
-                          <a
-                            href={booking.meeting_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm font-medium"
-                          >
-                            Join Meeting
-                          </a>
+                      {booking.status === 'pending_payment' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCompletePayment(booking)}
+                          disabled={payingBookingId === booking.id}
+                          className="block mt-3 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 disabled:bg-yellow-300 transition text-sm font-medium"
+                        >
+                          {payingBookingId === booking.id ? 'Opening payment...' : 'Complete payment'}
+                        </button>
+                      ) : booking.payment_status === 'paid' && booking.meeting_url ? (
+                        <a
+                          href={booking.meeting_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block mt-3 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition text-sm font-medium"
+                        >
+                          Join Meeting
+                        </a>
                       ) : (
                         <span className="block mt-3 text-sm text-gray-400 cursor-not-allowed select-none line-through">
                           Join Meeting
