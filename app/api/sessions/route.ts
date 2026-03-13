@@ -160,9 +160,11 @@ export async function POST(request: NextRequest) {
       if (fullError || !fullSession) {
         console.error('[sessions] Failed to load session for completion:', fullError);
       } else {
-        // Supabase relation types may not include ms_graph_user_email; we select it so assert type
+        // Supabase relation types may be arrays or omit fields; we select these so assert types
         type CounselorSelect = { display_name?: string; email?: string; ms_graph_user_email?: string };
+        type UserProfileSelect = { email?: string; full_name?: string };
         const counselors = fullSession.counselors as CounselorSelect | null;
+        const usersProfile = fullSession.users_profile as UserProfileSelect | null;
 
         // Update session status/payment_status
         const { error: updateError } = await supabaseAdmin
@@ -194,7 +196,7 @@ export async function POST(request: NextRequest) {
             const meeting = await createTeamsMeeting({
               organizerEmail:
                 counselors?.ms_graph_user_email ?? counselors?.email ?? '',
-              attendeeEmail: fullSession.users_profile?.email ?? '',
+              attendeeEmail: usersProfile?.email ?? '',
               subject: `Counseling Session - ${counselors?.display_name ?? 'Session'}`,
               startTime: startIso,
               endTime: endIso,
@@ -220,12 +222,12 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        const clientEmail = fullSession.users_profile?.email;
+        const clientEmail = usersProfile?.email;
         if (clientEmail && teamsLink) {
           try {
             await sendSessionConfirmationEmail({
               clientEmail,
-              clientName: fullSession.users_profile?.full_name ?? 'Client',
+              clientName: usersProfile?.full_name ?? 'Client',
               counselorName: counselors?.display_name ?? 'Counselor',
               sessionDate: String(fullSession.session_date),
               startTime: String(fullSession.start_time).slice(0, 5),
