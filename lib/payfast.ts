@@ -14,59 +14,19 @@ import crypto from 'crypto';
  * PayFast doc order for signature (order matters for their validation).
  * See: https://developers.payfast.co.za/docs#step_1_form_fields
  */
-const PAYFAST_SIGNATURE_FIELD_ORDER = [
-  'merchant_id',
-  'merchant_key',
-  'return_url',
-  'cancel_url',
-  'notify_url',
-  'name_first',
-  'name_last',
-  'email_address',
-  'cell_number',
-  'm_payment_id',
-  'amount',
-  'item_name',
-  'item_description',
-  'custom_int1',
-  'custom_int2',
-  'custom_int3',
-  'custom_int4',
-  'custom_int5',
-  'custom_str1',
-  'custom_str2',
-  'custom_str3',
-  'custom_str4',
-  'custom_str5',
-  'email_confirmation',
-  'confirmation_address',
-  'payment_method',
-  'subscription_type',
-  'billing_date',
-  'recurring_amount',
-  'frequency',
-  'cycles',
-];
-
 /**
  * Generate PayFast signature. Canonical implementation, server-side only.
  * - Filter empty values and "signature" key
- * - Sort by PayFast doc field order, then alphabetically for any extra keys
+ * - Sort ALL fields alphabetically by name (PayFast requirement)
  * - Encode each value only (encodeURIComponent, then replace %20 with +)
  * - Append passphrase after joining (raw passphrase, no encoding - per PayFast working examples)
  */
 export function generatePayFastSignature(data: Record<string, string>): string {
-  const orderIndex = new Map(PAYFAST_SIGNATURE_FIELD_ORDER.map((k, i) => [k, i]));
-
   const filtered = Object.entries(data)
     .filter(([key, value]) => value !== '' && key !== 'signature');
 
-  const sorted = [...filtered].sort(([a], [b]) => {
-    const ai = orderIndex.get(a) ?? 9999;
-    const bi = orderIndex.get(b) ?? 9999;
-    if (ai !== bi) return ai - bi;
-    return a.localeCompare(b);
-  });
+  // PayFast specifies that parameters must be sorted alphabetically by name
+  const sorted = [...filtered].sort(([a], [b]) => a.localeCompare(b));
 
   const encoded = sorted.map(([key, value]) => {
     return `${key}=${encodeURIComponent(value).replace(/%20/g, '+')}`;
