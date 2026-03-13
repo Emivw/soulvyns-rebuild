@@ -41,7 +41,7 @@ export default function BookingsPage() {
         .select(`
           *,
           counselors(display_name),
-          availability_slots(start_time, end_time)
+          availability_slots!slot_id(start_time, end_time)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
