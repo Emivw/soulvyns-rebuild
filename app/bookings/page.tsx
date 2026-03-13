@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 interface Booking {
   id: string;
+  slot_id?: string;
   status: string;
   payment_status?: string | null;
   amount: string;
@@ -39,7 +40,13 @@ export default function BookingsPage() {
       const { data, error } = await supabase
         .from('bookings')
         .select(`
-          *,
+          id,
+          slot_id,
+          status,
+          payment_status,
+          amount,
+          meeting_url,
+          created_at,
           counselors(display_name),
           availability_slots(start_time, end_time)
         `)

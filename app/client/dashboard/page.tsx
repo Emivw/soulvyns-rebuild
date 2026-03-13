@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 interface ClientBooking {
   id: string;
+  slot_id?: string;
   status: string;
   amount: string;
   meeting_url: string | null;
@@ -111,6 +112,7 @@ export default function ClientDashboardPage() {
           .from('bookings')
           .select(`
             id,
+            slot_id,
             status,
             amount,
             meeting_url,
