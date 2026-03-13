@@ -141,7 +141,7 @@ export default function BookingsPage() {
                     <div className="flex-1">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Counselor</p>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {booking.counselors?.display_name ?? '—'}
+                        {booking.counselors?.[0]?.display_name ?? '—'}
                       </h3>
                       <div className="space-y-1 text-sm text-gray-600">
                         {booking.session_start && booking.session_end ? (
