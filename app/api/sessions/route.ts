@@ -160,6 +160,10 @@ export async function POST(request: NextRequest) {
       if (fullError || !fullSession) {
         console.error('[sessions] Failed to load session for completion:', fullError);
       } else {
+        // Supabase relation types may not include ms_graph_user_email; we select it so assert type
+        type CounselorSelect = { display_name?: string; email?: string; ms_graph_user_email?: string };
+        const counselors = fullSession.counselors as CounselorSelect | null;
+
         // Update session status/payment_status
         const { error: updateError } = await supabaseAdmin
           .from('sessions')
@@ -189,11 +193,9 @@ export async function POST(request: NextRequest) {
 
             const meeting = await createTeamsMeeting({
               organizerEmail:
-                fullSession.counselors?.ms_graph_user_email ??
-                fullSession.counselors?.email ??
-                '',
+                counselors?.ms_graph_user_email ?? counselors?.email ?? '',
               attendeeEmail: fullSession.users_profile?.email ?? '',
-              subject: `Counseling Session - ${fullSession.counselors?.display_name ?? 'Session'}`,
+              subject: `Counseling Session - ${counselors?.display_name ?? 'Session'}`,
               startTime: startIso,
               endTime: endIso,
             });
@@ -224,7 +226,7 @@ export async function POST(request: NextRequest) {
             await sendSessionConfirmationEmail({
               clientEmail,
               clientName: fullSession.users_profile?.full_name ?? 'Client',
-              counselorName: fullSession.counselors?.display_name ?? 'Counselor',
+              counselorName: counselors?.display_name ?? 'Counselor',
               sessionDate: String(fullSession.session_date),
               startTime: String(fullSession.start_time).slice(0, 5),
               endTime: String(fullSession.end_time).slice(0, 5),
