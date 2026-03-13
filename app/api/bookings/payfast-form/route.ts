@@ -73,6 +73,9 @@ export async function POST(request: NextRequest) {
     const processUrl = getPayFastProcessUrl();
     console.log('[payfast-form] Sending to PayFast:', {
       processUrl,
+      payfastEnv: process.env.PAYFAST_ENV || 'sandbox',
+      merchant_id_used: merchant_id,
+      base_for_callbacks: base,
       return_url: params.return_url,
       cancel_url: params.cancel_url,
       notify_url: params.notify_url,

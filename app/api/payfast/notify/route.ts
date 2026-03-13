@@ -10,7 +10,15 @@ import {
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  console.log('🔔 [PAYFAST NOTIFY] PAYFAST webhook received');
+  console.log('🔔 [PAYFAST NOTIFY] PAYFAST webhook received', {
+    method: req.method,
+    url: req.url,
+    env: {
+      PAYFAST_MERCHANT_ID: process.env.PAYFAST_MERCHANT_ID ? '[set]' : '[missing]',
+      PAYFAST_ENV: process.env.PAYFAST_ENV || 'sandbox',
+      NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || '[unset]',
+    },
+  });
 
   try {
     // Validate required environment variables
@@ -20,6 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
+    console.log('📥 [PAYFAST NOTIFY] Raw form fields received:', Array.from(formData.keys()));
     const data: Record<string, string> = {};
 
     formData.forEach((value, key) => {
@@ -71,7 +80,7 @@ export async function POST(req: NextRequest) {
     const paymentStatus = data.payment_status;
 
     if (!bookingId) {
-      console.warn('⚠️ [PAYFAST NOTIFY] Missing booking ID');
+      console.warn('⚠️ [PAYFAST NOTIFY] Missing booking ID (m_payment_id). Full payload:', data);
       return new Response('Missing booking ID', { status: 400 });
     }
 
@@ -88,7 +97,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (bookingError || !booking) {
-      console.error('❌ [PAYFAST NOTIFY] Booking not found:', bookingError?.message);
+      console.error('❌ [PAYFAST NOTIFY] Booking not found when looking up by id = m_payment_id.', {
+        bookingIdTried: bookingId,
+        bookingError: bookingError?.message,
+      });
       return new Response('Booking not found', { status: 404 });
     }
 
