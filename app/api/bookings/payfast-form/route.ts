@@ -25,11 +25,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { slotId, amount, clientEmail = '', firstName = '', lastName = '' } = body ?? {};
+    const { bookingId, amount, clientEmail = '', firstName = '', lastName = '' } = body ?? {};
 
-    if (!slotId || amount == null) {
+    if (!bookingId || amount == null) {
       return NextResponse.json(
-        { error: 'Missing required fields: slotId and amount are required.' },
+        { error: 'Missing required fields: bookingId and amount are required.' },
         { status: 400 }
       );
     }
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     const merchant_key = process.env.PAYFAST_MERCHANT_KEY || '2q99zezq11goo';
     const base = getPayFastBaseUrl();
     const { cancel_url, notify_url } = getPayFastCallbackUrls();
-    const m_payment_id = slotId;
-    const return_url = `${base}/bookings/success?booking_id=${encodeURIComponent(m_payment_id)}`;
+    const m_payment_id = bookingId;
+    const return_url = `${base}/bookings/success?booking_id=${encodeURIComponent(bookingId)}`;
 
     const params: Record<string, string> = {
       merchant_id,

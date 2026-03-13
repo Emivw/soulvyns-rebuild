@@ -450,8 +450,10 @@ export default function SelectSlotPage() {
 
       setSlots((prev) => prev.filter((slot) => slot.id !== selectedSlot));
 
+      // bookingData.bookingId is the primary key of the bookings table.
+      // Use this as the PayFast m_payment_id so the webhook can find the booking.
       const payPayload = {
-        slotId: bookingData.bookingId,
+        bookingId: bookingData.bookingId,
         amount: parseFloat(bookingData.amount),
         clientEmail: bookingData.clientEmail,
         firstName: bookingData.clientFirstName,
@@ -463,7 +465,7 @@ export default function SelectSlotPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slotId: payPayload.slotId,
+          bookingId: payPayload.bookingId,
           amount: payPayload.amount,
           clientEmail: payPayload.clientEmail,
           firstName: payPayload.firstName,
