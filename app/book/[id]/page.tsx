@@ -498,8 +498,8 @@ export default function SelectSlotPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+        <div className="text-center animate-in fade-in-50 zoom-in-95 duration-300">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           <p className="mt-4 text-gray-600">Loading available slots...</p>
         </div>
@@ -508,10 +508,11 @@ export default function SelectSlotPage() {
   }
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-sky-50 via-white to-emerald-50">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Select Time Slot</h1>
+        <div className="bg-white/90 shadow-xl rounded-2xl p-6 border border-emerald-50 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Select Time Slot</h1>
+          <p className="text-sm text-gray-500 mb-6">Choose a time that works for you and confirm your booking.</p>
           
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -520,7 +521,7 @@ export default function SelectSlotPage() {
           )}
 
           {filteredSlots.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 animate-in fade-in-50 duration-300">
               {error ? (
                 <>
                   <p className="text-red-600 text-lg mb-4">{error}</p>
@@ -559,15 +560,16 @@ export default function SelectSlotPage() {
                 Available Sessions{selectedDate ? ` — ${selectedDate}` : ''}
               </h2>
               <div className="space-y-3 mb-6">
-                {filteredSlots.map((slot) => (
+                {filteredSlots.map((slot, index) => (
                   <button
                     key={slot.id}
                     onClick={() => setSelectedSlot(slot.id)}
-                    className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
+                    className={`w-full p-4 border-2 rounded-lg text-left transition-all duration-300 ease-out transform hover:-translate-y-0.5 hover:shadow-md animate-in fade-in-50 ${
                       selectedSlot === slot.id
                         ? 'bg-blue-50 border-blue-500 shadow-md'
                         : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                     }`}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -616,7 +618,7 @@ export default function SelectSlotPage() {
               <button
                 onClick={handleBookSlotClick}
                 disabled={!selectedSlot || !consentAccepted || booking}
-                className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600 transition font-medium text-lg"
+                className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-all duration-200 font-medium text-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 {booking ? (
                   <span className="flex items-center justify-center">

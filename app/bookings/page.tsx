@@ -173,8 +173,8 @@ export default function BookingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+        <div className="text-center animate-in fade-in-50 zoom-in-95 duration-300">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           <p className="mt-4 text-gray-600">Loading your bookings...</p>
         </div>
@@ -183,10 +183,11 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-sky-50 via-white to-emerald-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">My Bookings</h1>
+        <div className="bg-white/90 shadow-xl rounded-2xl p-6 border border-emerald-50 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
+          <p className="text-sm text-gray-500 mb-6">See your upcoming and past sessions and join your meetings.</p>
           
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -195,7 +196,7 @@ export default function BookingsPage() {
           )}
 
           {bookings.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 animate-in fade-in-50 duration-300">
               <p className="text-gray-500 text-lg mb-4">You have no bookings yet.</p>
               <Link
                 href="/book"
@@ -206,8 +207,12 @@ export default function BookingsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {bookings.map((booking) => (
-                <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+              {bookings.map((booking, index) => (
+                <div
+                  key={booking.id}
+                  className="border border-gray-200 rounded-xl p-6 bg-white/80 hover:bg-blue-50 hover:border-blue-300 hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 animate-in fade-in-50"
+                  style={{ animationDelay: `${index * 60}ms` }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Counselor</p>

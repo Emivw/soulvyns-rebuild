@@ -162,16 +162,16 @@ export default function CounselorDashboard() {
 
   if (!loading && accounts.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Redirecting to sign in...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-800">
+        <p className="text-slate-100 animate-in fade-in-50">Redirecting to sign in...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8 bg-background">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-card border border-border shadow rounded-lg p-6">
+        <div className="bg-card/95 border border-border/60 shadow-xl rounded-2xl p-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
           <h1 className="font-headline text-3xl font-bold text-foreground mb-2">Counselor Dashboard</h1>
           <p className="text-muted-foreground mb-8">
             Signed in as: <span className="font-semibold text-foreground">{email || 'Loading...'}</span>
@@ -193,7 +193,7 @@ export default function CounselorDashboard() {
           )}
 
           {!counselorNotFound && (
-            <section className="mb-8 rounded-lg border border-border bg-muted/30 p-6">
+            <section className="mb-8 rounded-lg border border-border bg-muted/30 p-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
               <h2 className="font-headline text-xl font-semibold text-foreground mb-4">Your profile</h2>
               <p className="text-sm text-muted-foreground mb-4">Bio, accolades, and specializations help clients find you.</p>
               {!profileEdit ? (
@@ -308,7 +308,7 @@ export default function CounselorDashboard() {
           )}
 
           {!counselorNotFound && (
-            <section className="mb-8 rounded-lg border border-border bg-muted/30 p-6">
+            <section className="mb-8 rounded-lg border border-border bg-muted/30 p-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
               <h2 className="font-headline text-xl font-semibold text-foreground mb-2">My Availability</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Set the times you are available for sessions on each day. Clients can only be booked into these windows.
@@ -526,7 +526,7 @@ export default function CounselorDashboard() {
           )}
 
           {!counselorNotFound && (
-            <section className="mb-8 rounded-lg border border-border bg-muted/20 p-6">
+            <section className="mb-8 rounded-lg border border-border bg-muted/20 p-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
               <div className="flex flex-col gap-4 lg:flex-row">
                 <div className="flex-1">
                   <h2 className="font-headline text-xl font-semibold mb-2 text-foreground">
@@ -581,8 +581,12 @@ export default function CounselorDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredUpcoming.map((booking) => (
-                  <div key={booking.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                {filteredUpcoming.map((booking, index) => (
+                  <div
+                    key={booking.id}
+                    className="border border-gray-200 rounded-xl p-6 bg-background hover:bg-primary/5 hover:border-primary/40 hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 animate-in fade-in-50"
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Client</p>
